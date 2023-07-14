@@ -3,7 +3,7 @@ use crate::errors::CompilerError;
 use crate::expressions::SyntaxExpression;
 use crate::lexer::TokenKind;
 use crate::operators::arithmetic::Arithmetic::*;
-use crate::operators::Operator;
+use crate::operators::logical::Logical::Not;
 use crate::operators::Operator::{ArithmeticOperator, LogicalOperator, RelationalOperator};
 
 pub struct Evaluator;
@@ -17,7 +17,7 @@ impl Evaluator {
                 } else {
                     Err(CompilerError::UnExpectedTokenError(
                         number.kind.clone(),
-                        TokenKind::LiteralToken(DataType::Number(0)),
+                        TokenKind::LiteralToken(DataType::Integer(0)),
                     ))
                 }
             }
@@ -44,20 +44,32 @@ impl Evaluator {
                 }
             }
             SyntaxExpression::UnaryExpression(operator_token, expression) => {
-                if let TokenKind::OperatorToken(ArithmeticOperator(operator)) = operator_token.kind
-                {
-                    match operator {
-                        Addition => Evaluator::evaluate(expression),
-                        Subtraction => Ok(Operator::ArithmeticOperator(Multiplication)
-                            .evaluate(DataType::Float(-1f64), Evaluator::evaluate(expression)?)?),
+                match operator_token.kind {
+                    TokenKind::OperatorToken(operator) => match operator {
+                        ArithmeticOperator(operator) => match operator {
+                            Addition => {
+                                Ok(Addition.evaluate_unary(Evaluator::evaluate(expression)?))
+                            }
+                            Subtraction => {
+                                Ok(Subtraction.evaluate_unary(Evaluator::evaluate(expression)?))
+                            }
+                            _ => Err(CompilerError::InvalidUnaryOperationError(
+                                operator_token.kind.clone(),
+                            )),
+                        },
+                        LogicalOperator(operator) => match operator {
+                            Not => Ok(Not.evaluate_unary(Evaluator::evaluate(expression)?)),
+                            _ => Err(CompilerError::InvalidUnaryOperationError(
+                                operator_token.kind.clone(),
+                            )),
+                        },
                         _ => Err(CompilerError::InvalidUnaryOperationError(
                             operator_token.kind.clone(),
                         )),
-                    }
-                } else {
-                    Err(CompilerError::InvalidUnaryOperationError(
+                    },
+                    _ => Err(CompilerError::InvalidUnaryOperationError(
                         operator_token.kind.clone(),
-                    ))
+                    )),
                 }
             }
         }

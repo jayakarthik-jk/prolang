@@ -6,4 +6,5 @@ pub enum Assingment {
     MultiplicationAssignment,
     DivisionAssignment,
     ModuloAssignment,
+    ExponentiationAssignment,
 }

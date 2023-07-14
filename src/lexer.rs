@@ -4,6 +4,8 @@ use crate::datatypes::DataType;
 use crate::errors::CompilerError;
 use crate::keywords::Keyword;
 use crate::operators::arithmetic::Arithmetic::*;
+use crate::operators::assignment::Assingment::*;
+use crate::operators::relational::Relational::*;
 use crate::operators::{Operator, Operator::*};
 use crate::symbols::Symbol::{self, *};
 pub struct Lexer {
@@ -41,6 +43,14 @@ impl Lexer {
         self.current
     }
 
+    fn _peek(&self, offset: usize) -> char {
+        if self.position + 1 >= self.source.len() {
+            '\0'
+        } else {
+            self.source[self.position + offset] as char
+        }
+    }
+
     pub fn parse_token(&mut self) -> Result<&Token, CompilerError> {
         if self.current.is_ascii_whitespace() {
             // let start = self.position;
@@ -52,8 +62,9 @@ impl Lexer {
             // return Ok(token);
         }
 
-        let current_token = if self.current == '\r' && self._next() == '\n' {
+        let current_token = if self.current == '\r' && self._peek(1) == '\n' {
             let token = Token::new(TokenKind::NewLineToken, self.position);
+            self._next();
             self._next();
             token
         } else {
@@ -91,7 +102,7 @@ impl Lexer {
                                 )));
                             }
                         };
-                        Token::new(TokenKind::LiteralToken(DataType::Number(number)), start)
+                        Token::new(TokenKind::LiteralToken(DataType::Integer(number)), start)
                     }
                 }
                 current if current.is_alphabetic() => {
@@ -140,44 +151,110 @@ impl Lexer {
                     token
                 }
                 '+' => {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Addition)),
-                        self.position,
-                    );
-                    self._next();
-                    token
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(AdditionAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Addition)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
                 }
                 '-' => {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Subtraction)),
-                        self.position,
-                    );
-                    self._next();
-                    token
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(SubtractionAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Subtraction)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
                 }
                 '*' => {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Multiplication)),
-                        self.position,
-                    );
-                    self._next();
-                    token
+                    if self._peek(1) == '*' && self._peek(2) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(ExponentiationAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else if self._peek(1) == '*' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Exponentiation)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(MultiplicationAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Multiplication)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
                 }
                 '/' => {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Division)),
-                        self.position,
-                    );
-                    self._next();
-                    token
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(DivisionAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Division)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
                 }
                 '%' => {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Modulo)),
-                        self.position,
-                    );
-                    self._next();
-                    token
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(ModuloAssignment)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(ArithmeticOperator(Modulo)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
                 }
                 '(' => {
                     let token = Token::new(TokenKind::SymbolToken(OpenParanthesis), self.position);
@@ -189,6 +266,61 @@ impl Lexer {
                     self._next();
                     token
                 }
+                '=' => {
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(RelationalOperator(Equals)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(AssingmentOperator(EqualTo)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
+                }
+                '<' => {
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(RelationalOperator(LessThanOrEquals)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(RelationalOperator(LessThan)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
+                }
+                '>' => {
+                    if self._peek(1) == '=' {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(RelationalOperator(GreaterThanOrEquals)),
+                            self.position,
+                        );
+                        self._next();
+                        self._next();
+                        token
+                    } else {
+                        let token = Token::new(
+                            TokenKind::OperatorToken(RelationalOperator(GreaterThan)),
+                            self.position,
+                        );
+                        self._next();
+                        token
+                    }
+                }
+
                 _ => return Err(CompilerError::UnknownTokenError(self.current)),
             }
         };
@@ -286,5 +418,6 @@ pub enum TokenKind {
     WhitespaceToken(usize),
     NewLineToken,
     OperatorToken(Operator),
+    KeywordToken(Keyword),
     SymbolToken(Symbol),
 }

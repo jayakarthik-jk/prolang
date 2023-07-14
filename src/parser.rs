@@ -17,14 +17,13 @@ impl Parser {
 
     pub fn parse(&mut self) -> Result<SyntaxExpression, CompilerError> {
         self.lexer.prepare()?;
-        // self.parse_expression()
         self.parse_expression(0)
     }
 
     fn parse_expression(&self, parent_precedence: u8) -> Result<SyntaxExpression, CompilerError> {
 
         let mut left = if let Ok(operator_token) = self.lexer.get_current_token() 
-        && let TokenKind::OperatorToken(operator) = operator_token.kind 
+        && let TokenKind::OperatorToken(operator) = operator_token.kind
         && operator.get_unery_precedence() >= parent_precedence {
             self.lexer.advance();
             let expression = self.parse_expression(operator.get_unery_precedence())?;
