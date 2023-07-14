@@ -1,25 +1,30 @@
 use crate::lexer::Token;
 
 #[derive(Debug, PartialEq)]
-pub enum Expression<'a> {
+pub enum SyntaxExpression<'a> {
     LiteralExpression(&'a Token),
-    BinaryExpression(Box<Expression<'a>>, &'a Token, Box<Expression<'a>>),
-    ParanthesizedExpression(Box<Expression<'a>>),
+    UnaryExpression(&'a Token, Box<SyntaxExpression<'a>>),
+    BinaryExpression(
+        Box<SyntaxExpression<'a>>,
+        &'a Token,
+        Box<SyntaxExpression<'a>>,
+    ),
 }
 
-impl<'a> Expression<'a> {
-    pub fn print(node: &Expression, intent: String) {
+impl<'a> SyntaxExpression<'a> {
+    pub fn print(node: &SyntaxExpression, intent: String) {
         match node {
-            Expression::LiteralExpression(number) => {
+            SyntaxExpression::LiteralExpression(number) => {
                 println!("{intent}{:?}", number.kind);
             }
-            Expression::BinaryExpression(left, operator, right) => {
+            SyntaxExpression::BinaryExpression(left, operator, right) => {
                 println!("{intent}{:?}", operator.kind);
-                Expression::print(left, format!("{intent}    "));
-                Expression::print(right, format!("{intent}    "));
+                SyntaxExpression::print(left, format!("{intent}    "));
+                SyntaxExpression::print(right, format!("{intent}    "));
             }
-            Expression::ParanthesizedExpression(expression) => {
-                Expression::print(&expression, format!("{intent}    "));
+            SyntaxExpression::UnaryExpression(operator, expression) => {
+                println!("{intent}{:?}", operator.kind);
+                SyntaxExpression::print(&expression, format!("{intent}    "));
             }
         }
     }

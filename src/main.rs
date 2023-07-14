@@ -1,7 +1,4 @@
-use compiler::{
-    evaluator::Evaluator,
-    parser::{Expression, Parser},
-};
+use compiler::{evaluator::Evaluator, expressions::SyntaxExpression, parser::Parser};
 use std::io::stdin;
 
 fn main() {
@@ -19,8 +16,14 @@ fn main() {
                 continue;
             }
         };
-        Expression::print(&expression, "".to_string());
-        let result = Evaluator::evaluate(&Box::new(expression)).unwrap();
-        println!("Result = {}", result);
+        SyntaxExpression::print(&expression, "".to_string());
+        let result = match Evaluator::evaluate(&Box::new(expression)) {
+            Ok(result) => result,
+            Err(error) => {
+                eprintln!("{}", error);
+                continue;
+            }
+        };
+        println!("Result = {:?}", result);
     }
 }
