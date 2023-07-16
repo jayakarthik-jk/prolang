@@ -63,6 +63,8 @@ fn console_mode() {
             }
         };
 
+        // SemanticTree::print(&semantic_tree);
+
         let evaluator = Evaluator::new(semantic_tree, symbol_table.clone());
 
         let result = match evaluator.evaluate() {

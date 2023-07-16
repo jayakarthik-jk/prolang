@@ -44,10 +44,10 @@ impl Lexer {
     }
 
     fn _next(&mut self) -> char {
-        self.column += 1;
         self.current = if self.position + 1 >= self.source.len() {
             '\0'
         } else {
+            self.column += 1;
             self.position += 1;
             self.source[self.position] as char
         };
@@ -130,9 +130,9 @@ impl Lexer {
                     )
                 }
             }
-            current if current.is_alphabetic() => {
+            current if current.is_alphabetic() || current == '_' => {
                 let start = self.position;
-                while self.current.is_ascii_alphanumeric() {
+                while self.current.is_ascii_alphanumeric() || self.current == '_' {
                     self._next();
                 }
                 let word = &self.source[start..self.position];
@@ -512,12 +512,12 @@ impl Lexer {
 
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);
-        if let TokenKind::IdentifierToken(name) = &keyword {
-            let mut symbol_table = self.symbol_table.borrow_mut();
+        let mut symbol_table = self.symbol_table.borrow_mut();
+        if let TokenKind::IdentifierToken(name) = &keyword
+        && !symbol_table.variables.contains_key(name) {
             symbol_table
                 .variables
-                .insert(name.clone(), DataType::Integer(0));
-        } else {
+                .insert(name.clone(), DataType::InternalUndefined);
         }
         Token::new(keyword, self.line, self.column - word.len())
     }

@@ -30,7 +30,7 @@ impl Display for Assingment {
 
 impl Assingment {
     pub fn evaluate(&self, a: DataType, b: DataType) -> Result<DataType, CompilerError> {
-        let result = match self {
+        match self {
             Assingment::SimpleAssignment => return Err(CompilerError::InvalidAssignment),
             Assingment::AdditionAssignment => Addition.evaluate(a, b),
             Assingment::SubtractionAssignment => Subtraction.evaluate(a, b),
@@ -38,7 +38,6 @@ impl Assingment {
             Assingment::DivisionAssignment => Division.evaluate(a, b),
             Assingment::ModuloAssignment => Modulo.evaluate(a, b),
             Assingment::ExponentiationAssignment => Exponentiation.evaluate(a, b),
-        };
-        Ok(result)
+        }
     }
 }

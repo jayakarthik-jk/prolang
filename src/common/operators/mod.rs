@@ -23,7 +23,7 @@ pub enum Operator {
 impl Operator {
     pub fn evaluate(&self, a: DataType, b: DataType) -> Result<DataType, CompilerError> {
         match self {
-            Operator::ArithmeticOperator(arithmetic) => Ok(arithmetic.evaluate(a, b)),
+            Operator::ArithmeticOperator(arithmetic) => arithmetic.evaluate(a, b),
             Operator::RelationalOperator(relational) => Ok(relational.evaluate(a, b)),
             Operator::LogicalOperator(logical) => Ok(logical.evaluate(a, b)),
             Operator::AssingmentOperator(_) => todo!(),

@@ -7,7 +7,7 @@ pub enum DataType {
     Integer(i128),
     Boolean(bool),
     Infinity,
-    NAN,
+    InternalUndefined,
 }
 
 impl DataType {
@@ -18,7 +18,7 @@ impl DataType {
             DataType::Integer(a) => *a != 0,
             DataType::Boolean(a) => *a,
             DataType::Infinity => true,
-            DataType::NAN => false,
+            DataType::InternalUndefined => false,
         }
     }
     pub fn is_falsy(&self) -> bool {
@@ -34,7 +34,7 @@ impl Display for DataType {
             DataType::Integer(a) => a.to_string(),
             DataType::Boolean(a) => a.to_string(),
             DataType::Infinity => "Infinity".to_string(),
-            DataType::NAN => "NAN (Not a Number)".to_string(),
+            DataType::InternalUndefined => "Undefined".to_string(),
         };
         write!(f, "{text}")
     }

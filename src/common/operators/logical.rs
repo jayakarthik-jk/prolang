@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::DataType;
+use crate::common::{datatypes::DataType, errors::CompilerError};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {
@@ -44,17 +44,18 @@ impl Logical {
         }
     }
 
-    pub fn evaluate_unary(&self, a: DataType) -> DataType {
-        match self {
+    pub fn evaluate_unary(&self, a: DataType) -> Result<DataType, CompilerError> {
+        let result = match self {
             Logical::Not => match a {
                 DataType::Boolean(a) => DataType::Boolean(!a),
                 DataType::String(a) => DataType::Boolean(a.len() > 0),
                 DataType::Float(a) => DataType::Boolean(a != 0.0),
                 DataType::Integer(a) => DataType::Boolean(a != 0),
-                DataType::Infinity => DataType::Boolean(false),
-                DataType::NAN => DataType::Boolean(true),
+                DataType::Infinity => DataType::Infinity,
+                DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
             },
             _ => DataType::Boolean(false),
-        }
+        };
+        Ok(result)
     }
 }

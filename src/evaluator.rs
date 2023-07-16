@@ -42,6 +42,7 @@ impl Evaluator {
             SemanticTree::BinaryExpression(left, operator, right) => {
                 let left = self._evaluate(left)?;
                 let right = self._evaluate(right)?;
+                println!("left: {:?}, right: {:?}", left, right);
                 match &operator.kind {
                     TokenKind::OperatorToken(operator) => {
                         let result = match operator {
@@ -63,16 +64,16 @@ impl Evaluator {
                 match &operator_token.kind {
                     TokenKind::OperatorToken(operator) => match operator {
                         ArithmeticOperator(operator) => match operator {
-                            Addition => Ok(Addition.evaluate_unary(self._evaluate(expression)?)),
+                            Addition => Ok(Addition.evaluate_unary(self._evaluate(expression)?)?),
                             Subtraction => {
-                                Ok(Subtraction.evaluate_unary(self._evaluate(expression)?))
+                                Ok(Subtraction.evaluate_unary(self._evaluate(expression)?)?)
                             }
                             operation => Err(CompilerError::INvalidOperatorForUnaryOperation(
                                 Operator::ArithmeticOperator(operation.clone()),
                             )),
                         },
                         LogicalOperator(operator) => match operator {
-                            Not => Ok(Not.evaluate_unary(self._evaluate(expression)?)),
+                            Not => Ok(Not.evaluate_unary(self._evaluate(expression)?)?),
                             operator => Err(CompilerError::INvalidOperatorForUnaryOperation(
                                 Operator::LogicalOperator(operator.clone()),
                             )),

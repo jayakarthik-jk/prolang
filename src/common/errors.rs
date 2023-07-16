@@ -5,6 +5,8 @@ use colored::Colorize;
 use crate::common::operators::Operator;
 use crate::lexical_analysis::lexer::TokenKind;
 
+use super::datatypes::DataType;
+
 #[derive(Debug, PartialEq)]
 pub enum CompilerError {
     EndOfSourceCodeError,
@@ -21,9 +23,9 @@ pub enum CompilerError {
     UnexpectedTokenWithExpected(TokenKind, TokenKind, usize, usize),
 
     // Evaluation Errors
-    InvalidTokenAsBinaryOperator(TokenKind),
     InvalidOperatorForBinaryOperation(Operator),
     INvalidOperatorForUnaryOperation(Operator),
+    InvalidTokenAsBinaryOperator(TokenKind),
     InvalidTokenAsUnaryOperator(TokenKind),
     InvalidTokenAsLiteral(TokenKind),
     InvalidTokenAsOperator(TokenKind),
@@ -33,6 +35,11 @@ pub enum CompilerError {
     InvalidTokenAsIdentifier(crate::lexical_analysis::lexer::TokenKind),
     InvalidExpressionAssignment(usize, usize),
     InvalidAssignment,
+    InvalidStringParsing(DataType),
+    InvalidUneryOperation,
+    UnsupportedOperationBetween(DataType, Operator, DataType),
+    MathUndefined,
+    OperationOnUndefined,
 }
 
 impl Display for CompilerError {
@@ -87,6 +94,20 @@ impl Display for CompilerError {
             ),
             CompilerError::InvalidAssignment => "Invalid assignment".to_string(),
             CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
+            CompilerError::InvalidStringParsing(a) => {
+                format!("Invalid string parsing: '{}' is not a valid Nubmer", a)
+            }
+            CompilerError::InvalidUneryOperation => "Invalid unary operation".to_string(),
+            CompilerError::UnsupportedOperationBetween(left, operator, right) => {
+                format!(
+                    "Unsupported operation {} between '{}' and '{}'",
+                    operator, left, right
+                )
+            }
+            CompilerError::MathUndefined => "Math Error: undefined".to_string(),
+            CompilerError::OperationOnUndefined => {
+                "Cannot perform operation on Undefined".to_string()
+            }
         };
         write!(f, "{}", text.red())
     }

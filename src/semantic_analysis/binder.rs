@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::common::datatypes::DataType;
 use crate::common::errors::CompilerError;
 use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::lexer::Token;
@@ -71,10 +72,11 @@ impl Binder {
             println!("binding identifier: {}", identifier_token);
         }
         if let IdentifierToken(name) = &identifier_token.kind {
-            if self.symbol_table.borrow().variables.contains_key(name) {
-                Ok(SemanticTree::IdentifierExpression(Rc::clone(
-                    identifier_token,
-                )))
+            let table = self.symbol_table.borrow();
+            let variable = table.variables.get(name);
+            if let Some(value) = variable
+            && value != &DataType::InternalUndefined {
+                Ok(SemanticTree::IdentifierExpression(identifier_token.clone()))
             } else {
                 Err(CompilerError::UndefinedVariable(name.clone()))
             }

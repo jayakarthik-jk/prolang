@@ -1,8 +1,10 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::DataType;
+use crate::common::{datatypes::DataType, errors::CompilerError};
 
 use self::Arithmetic::*;
+
+use super::Operator;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Arithmetic {
     Addition,
@@ -27,7 +29,7 @@ impl Display for Arithmetic {
 }
 
 impl Arithmetic {
-    pub fn evaluate(&self, a: DataType, b: DataType) -> DataType {
+    pub fn evaluate(&self, a: DataType, b: DataType) -> Result<DataType, CompilerError> {
         match self {
             Addition => Self::add(a, b),
             Subtraction => Self::sub(a, b),
@@ -38,13 +40,17 @@ impl Arithmetic {
         }
     }
 
-    pub fn evaluate_unary(&self, a: DataType) -> DataType {
-        match self {
-            Addition => match a {
+    pub fn evaluate_unary(&self, value: DataType) -> Result<DataType, CompilerError> {
+        let result = match self {
+            Addition => match value {
                 DataType::String(a) => {
                     let result: f64 = match a.parse() {
                         Ok(a) => a,
-                        Err(_) => return DataType::NAN,
+                        Err(_) => {
+                            return Err(CompilerError::InvalidStringParsing(DataType::String(
+                                a.clone(),
+                            )))
+                        }
                     };
                     if result.fract() == 0.0 {
                         DataType::Integer(result as i128)
@@ -54,24 +60,30 @@ impl Arithmetic {
                 }
                 a => a,
             },
-            Subtraction => match a {
+            Subtraction => match value {
                 DataType::Float(a) => DataType::Float(-a),
                 DataType::Integer(a) => DataType::Integer(-a),
                 DataType::Boolean(a) => DataType::Integer(if a { -1 } else { 0 }),
                 DataType::Infinity => DataType::Infinity,
-                DataType::NAN => DataType::NAN,
-                DataType::String(_) => DataType::NAN,
+                DataType::String(_) => return Err(CompilerError::InvalidUneryOperation),
+                DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
             },
-            _ => DataType::NAN,
-        }
+            operator => {
+                return Err(CompilerError::INvalidOperatorForUnaryOperation(
+                    Operator::ArithmeticOperator(*operator),
+                ))
+            }
+        };
+        Ok(result)
     }
 
-    fn add(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
+    fn add(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
             (DataType::String(a), DataType::String(b)) => DataType::String(a + &b),
             (DataType::String(a), DataType::Float(b)) => DataType::String(a + &b.to_string()),
             (DataType::String(a), DataType::Integer(b)) => DataType::String(a + &b.to_string()),
             (DataType::String(a), DataType::Boolean(b)) => DataType::String(a + &b.to_string()),
+            (DataType::String(a), DataType::Infinity) => DataType::String(a + "Infinity"),
 
             (DataType::Float(a), DataType::String(b)) => DataType::String(a.to_string() + &b),
             (DataType::Float(a), DataType::Float(b)) => DataType::Float(a + b),
@@ -79,12 +91,14 @@ impl Arithmetic {
             (DataType::Float(a), DataType::Boolean(b)) => {
                 DataType::Float(if b { a + 1.0 } else { a })
             }
+
             (DataType::Integer(a), DataType::String(b)) => DataType::String(a.to_string() + &b),
             (DataType::Integer(a), DataType::Float(b)) => DataType::Float(a as f64 + b),
             (DataType::Integer(a), DataType::Integer(b)) => DataType::Integer(a + b),
             (DataType::Integer(a), DataType::Boolean(b)) => {
                 DataType::Integer(if b { a + 1 } else { a })
             }
+
             (DataType::Boolean(a), DataType::String(b)) => DataType::String(a.to_string() + &b),
             (DataType::Boolean(a), DataType::Float(b)) => {
                 DataType::Float(if a { b + 1.0 } else { b })
@@ -97,20 +111,26 @@ impl Arithmetic {
                 (false, false) => 0,
                 _ => 1,
             }),
-            (DataType::String(a), DataType::Infinity) => DataType::String(a + "Infinity"),
             (DataType::Infinity, DataType::String(a)) => {
                 DataType::String("Infinity".to_string() + &a)
             }
-            (DataType::String(a), DataType::NAN) => DataType::String(a + "NAN"),
-            (DataType::NAN, DataType::String(a)) => DataType::String("NAN".to_string() + &a),
-            (_, DataType::NAN) | (DataType::NAN, _) => DataType::NAN,
             (_, DataType::Infinity) | (DataType::Infinity, _) => DataType::Infinity,
-        }
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 
-    fn sub(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
-            (DataType::String(_), _) | (_, DataType::String(_)) => DataType::NAN,
+    fn sub(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
+            (DataType::String(a), b) | (b, DataType::String(a)) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::String(a),
+                    Operator::ArithmeticOperator(Subtraction),
+                    b,
+                ))
+            }
 
             (DataType::Float(a), DataType::Float(b)) => DataType::Float(a - b),
             (DataType::Float(a), DataType::Integer(b)) => DataType::Float(a - b as f64),
@@ -134,14 +154,23 @@ impl Arithmetic {
                 (false, true) => -1,
                 _ => 0,
             }),
-            (_, DataType::NAN) | (DataType::NAN, _) => DataType::NAN,
             (_, DataType::Infinity) | (DataType::Infinity, _) => DataType::Infinity,
-        }
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 
-    fn mul(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
-            (DataType::String(_), DataType::String(_)) => DataType::NAN,
+    fn mul(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
+            (DataType::String(a), DataType::String(b)) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::String(a),
+                    Operator::ArithmeticOperator(Multiplication),
+                    DataType::String(b),
+                ))
+            }
             (DataType::String(a), DataType::Float(b)) => {
                 let mut result = String::new();
                 for _ in 0..b as i128 {
@@ -198,19 +227,30 @@ impl Arithmetic {
             } else {
                 0
             }),
-            (DataType::String(_), DataType::Infinity)
-            | (DataType::Infinity, DataType::String(_)) => DataType::NAN,
-            (_, DataType::NAN) | (DataType::NAN, _) => DataType::NAN,
+            (DataType::String(a), DataType::Infinity)
+            | (DataType::Infinity, DataType::String(a)) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::Infinity,
+                    Operator::ArithmeticOperator(Multiplication),
+                    DataType::String(a),
+                ))
+            }
             (_, DataType::Infinity) | (DataType::Infinity, _) => DataType::Infinity,
-        }
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 
-    fn div(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
-            (DataType::String(_), _) | (_, DataType::String(_)) => DataType::NAN,
+    fn div(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
+            (DataType::String(_), _) | (_, DataType::String(_)) => {
+                return Err(CompilerError::MathUndefined)
+            }
             (DataType::Float(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Infinity
                 } else {
@@ -219,7 +259,7 @@ impl Arithmetic {
             }
             (DataType::Float(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Infinity
                 } else {
@@ -230,7 +270,7 @@ impl Arithmetic {
                 if b {
                     DataType::Infinity
                 } else {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 }
             }
             (DataType::Boolean(a), DataType::Boolean(b)) => {
@@ -260,7 +300,7 @@ impl Arithmetic {
             }
             (DataType::Integer(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Infinity
                 } else {
@@ -269,7 +309,7 @@ impl Arithmetic {
             }
             (DataType::Integer(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Infinity
                 } else {
@@ -278,7 +318,7 @@ impl Arithmetic {
             }
             (DataType::Boolean(a), DataType::Float(b)) => {
                 if a {
-                    Division.evaluate(DataType::Float(1.0), DataType::Float(b))
+                    Division.evaluate(DataType::Float(1.0), DataType::Float(b))?
                 } else {
                     DataType::Float(0.0)
                 }
@@ -286,17 +326,17 @@ impl Arithmetic {
             (DataType::Boolean(a), DataType::Integer(b)) => Division.evaluate(
                 DataType::Float(if a { 1.0 } else { 0.0 }),
                 DataType::Float(b as f64),
-            ),
+            )?,
             (DataType::Float(a), DataType::Infinity) => {
                 if a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Float(0.0)
                 }
             }
             (DataType::Integer(a), DataType::Infinity) => {
                 if a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Float(0.0)
                 }
@@ -305,34 +345,44 @@ impl Arithmetic {
                 if a {
                     DataType::Float(0.0)
                 } else {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 }
             }
             (DataType::Infinity, DataType::Float(a)) => {
                 if a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Infinity
                 }
             }
             (DataType::Infinity, DataType::Integer(a)) => {
                 if a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Infinity
                 }
             }
-            (DataType::NAN, _) | (_, DataType::NAN) => DataType::NAN,
-            (DataType::Infinity, DataType::Infinity) => DataType::NAN,
-        }
+            (DataType::Infinity, DataType::Infinity) => return Err(CompilerError::MathUndefined),
+
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 
-    fn modulo(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
-            (DataType::String(_), _) | (_, DataType::String(_)) => DataType::NAN,
+    fn modulo(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
+            (DataType::String(a), b) | (b, DataType::String(a)) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::String(a),
+                    Operator::ArithmeticOperator(Modulo),
+                    b,
+                ))
+            }
             (DataType::Float(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Infinity
                 } else {
@@ -341,17 +391,23 @@ impl Arithmetic {
             }
             (DataType::Float(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Infinity
                 } else {
                     DataType::Float(a % b as f64)
                 }
             }
-            (DataType::Infinity, DataType::Boolean(_)) => DataType::NAN,
+            (DataType::Infinity, DataType::Boolean(a)) => {
+                if a {
+                    DataType::Infinity
+                } else {
+                    return Err(CompilerError::MathUndefined);
+                }
+            }
             (DataType::Integer(a), DataType::Boolean(b)) => {
                 if b {
-                    Modulo.evaluate(DataType::Integer(a), DataType::Integer(1))
+                    Modulo.evaluate(DataType::Integer(a), DataType::Integer(1))?
                 } else {
                     DataType::Infinity
                 }
@@ -371,7 +427,7 @@ impl Arithmetic {
 
             (DataType::Float(a), DataType::Boolean(b)) => {
                 if b {
-                    Modulo.evaluate(DataType::Float(a), DataType::Integer(1))
+                    Modulo.evaluate(DataType::Float(a), DataType::Integer(1))?
                 } else {
                     DataType::Infinity
                 }
@@ -379,7 +435,7 @@ impl Arithmetic {
 
             (DataType::Integer(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Infinity
                 } else {
@@ -388,7 +444,7 @@ impl Arithmetic {
             }
             (DataType::Integer(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Infinity
                 } else {
@@ -397,7 +453,7 @@ impl Arithmetic {
             }
             (DataType::Boolean(a), DataType::Float(b)) => {
                 if a {
-                    Modulo.evaluate(DataType::Float(1.0), DataType::Float(b))
+                    Modulo.evaluate(DataType::Float(1.0), DataType::Float(b))?
                 } else {
                     DataType::Float(0.0)
                 }
@@ -405,17 +461,17 @@ impl Arithmetic {
             (DataType::Boolean(a), DataType::Integer(b)) => Modulo.evaluate(
                 DataType::Integer(if a { 1 } else { 0 }),
                 DataType::Integer(b),
-            ),
+            )?,
             (DataType::Float(a), DataType::Infinity) => {
                 if a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Float(a)
                 }
             }
             (DataType::Integer(a), DataType::Infinity) => {
                 if a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Integer(a)
                 }
@@ -424,22 +480,35 @@ impl Arithmetic {
                 if a {
                     DataType::Integer(0)
                 } else {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 }
             }
-            (DataType::Infinity, DataType::Float(_)) => DataType::NAN,
-            (DataType::Infinity, DataType::Integer(_)) => DataType::NAN,
-            (DataType::Infinity, DataType::Infinity) => DataType::NAN,
-            (DataType::NAN, _) | (_, DataType::NAN) => DataType::NAN,
-        }
+            (DataType::Infinity, a) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::Infinity,
+                    Operator::ArithmeticOperator(Modulo),
+                    a,
+                ))
+            }
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 
-    fn power(a: DataType, b: DataType) -> DataType {
-        match (a, b) {
-            (DataType::String(_), _) | (_, DataType::String(_)) => DataType::NAN,
+    fn power(a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+        let result = match (a, b) {
+            (DataType::String(a), b) | (b, DataType::String(a)) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    DataType::String(a),
+                    Operator::ArithmeticOperator(Exponentiation),
+                    b,
+                ))
+            }
             (DataType::Float(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Float(1.0)
                 } else {
@@ -448,7 +517,7 @@ impl Arithmetic {
             }
             (DataType::Float(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Float(1.0)
                 } else {
@@ -459,20 +528,20 @@ impl Arithmetic {
                 if b {
                     DataType::Infinity
                 } else {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 }
             }
             (a, DataType::Boolean(b)) => {
                 if b {
-                    Exponentiation.evaluate(a, DataType::Integer(1))
+                    Exponentiation.evaluate(a, DataType::Integer(1))?
                 } else {
-                    Exponentiation.evaluate(a, DataType::Integer(0))
+                    Exponentiation.evaluate(a, DataType::Integer(0))?
                 }
             }
 
             (DataType::Integer(a), DataType::Float(b)) => {
                 if b == 0.0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
                     DataType::Float(1.0)
                 } else {
@@ -481,7 +550,7 @@ impl Arithmetic {
             }
             (DataType::Integer(a), DataType::Integer(b)) => {
                 if b == 0 && a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
                     DataType::Integer(1)
                 } else {
@@ -495,7 +564,7 @@ impl Arithmetic {
             }
             (DataType::Boolean(a), DataType::Float(b)) => {
                 if a {
-                    Exponentiation.evaluate(DataType::Float(1.0), DataType::Float(b))
+                    Exponentiation.evaluate(DataType::Float(1.0), DataType::Float(b))?
                 } else {
                     DataType::Float(0.0)
                 }
@@ -503,26 +572,32 @@ impl Arithmetic {
             (DataType::Boolean(a), DataType::Integer(b)) => Exponentiation.evaluate(
                 DataType::Integer(if a { 1 } else { 0 }),
                 DataType::Integer(b),
-            ),
-            (DataType::Float(_), DataType::Infinity) => DataType::NAN,
-            (DataType::Integer(_), DataType::Infinity) => DataType::NAN,
-            (DataType::Boolean(_), DataType::Infinity) => DataType::NAN,
+            )?,
+            (a, DataType::Infinity) => {
+                return Err(CompilerError::UnsupportedOperationBetween(
+                    a,
+                    Operator::ArithmeticOperator(Exponentiation),
+                    DataType::Infinity,
+                ))
+            }
             (DataType::Infinity, DataType::Float(a)) => {
                 if a == 0.0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Infinity
                 }
             }
             (DataType::Infinity, DataType::Integer(a)) => {
                 if a == 0 {
-                    DataType::NAN
+                    return Err(CompilerError::MathUndefined);
                 } else {
                     DataType::Infinity
                 }
             }
-            (DataType::NAN, _) | (_, DataType::NAN) => DataType::NAN,
-            (DataType::Infinity, DataType::Infinity) => DataType::NAN,
-        }
+            (_, DataType::InternalUndefined) | (DataType::InternalUndefined, _) => {
+                return Err(CompilerError::OperationOnUndefined)
+            }
+        };
+        Ok(result)
     }
 }

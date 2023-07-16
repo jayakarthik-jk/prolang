@@ -35,7 +35,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a == b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a == b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(true),
                 _ => DataType::Boolean(false),
             },
             Relational::NotEquals => match (a, b) {
@@ -44,7 +43,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a != b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a != b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(false),
                 _ => DataType::Boolean(true),
             },
             Relational::LessThan => match (a, b) {
@@ -53,7 +51,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a < b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a < b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(false),
                 _ => DataType::Boolean(false),
             },
             Relational::LessThanOrEquals => match (a, b) {
@@ -62,7 +59,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a <= b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a <= b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(false),
                 _ => DataType::Boolean(false),
             },
             Relational::GreaterThan => match (a, b) {
@@ -71,7 +67,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a > b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a > b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(false),
                 _ => DataType::Boolean(false),
             },
             Relational::GreaterThanOrEquals => match (a, b) {
@@ -80,7 +75,6 @@ impl Relational {
                 (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a >= b),
                 (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a >= b),
                 (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                (DataType::NAN, DataType::NAN) => DataType::Boolean(false),
                 _ => DataType::Boolean(false),
             },
         }
