@@ -1,4 +1,7 @@
-use crate::{datatypes::DataType, errors::CompilerError};
+use std::fmt::Display;
+
+use crate::common::datatypes::DataType;
+use crate::common::errors::CompilerError;
 
 use self::{
     arithmetic::Arithmetic, assignment::Assingment, logical::Logical, relational::Relational,
@@ -45,7 +48,7 @@ impl Operator {
                 Relational::GreaterThanOrEquals => 5,
             },
             Operator::AssingmentOperator(operator) => match operator {
-                Assingment::EqualTo => 0,
+                Assingment::SimpleAssignment => 0,
                 Assingment::AdditionAssignment => 0,
                 Assingment::SubtractionAssignment => 0,
                 Assingment::MultiplicationAssignment => 0,
@@ -73,6 +76,17 @@ impl Operator {
                 _ => 0,
             },
             _ => 0,
+        }
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::ArithmeticOperator(operator) => write!(f, "{}", operator),
+            Operator::RelationalOperator(operator) => write!(f, "{}", operator),
+            Operator::AssingmentOperator(operator) => write!(f, "{}", operator),
+            Operator::LogicalOperator(operator) => write!(f, "{}", operator),
         }
     }
 }

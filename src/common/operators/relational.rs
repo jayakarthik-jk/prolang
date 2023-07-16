@@ -1,4 +1,6 @@
-use crate::datatypes::DataType;
+use std::fmt::Display;
+
+use crate::common::datatypes::DataType;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Relational {
@@ -8,6 +10,20 @@ pub enum Relational {
     LessThanOrEquals,
     GreaterThan,
     GreaterThanOrEquals,
+}
+
+impl Display for Relational {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Relational::Equals => "==",
+            Relational::NotEquals => "!=",
+            Relational::LessThan => "<",
+            Relational::LessThanOrEquals => "<=",
+            Relational::GreaterThan => ">",
+            Relational::GreaterThanOrEquals => ">=",
+        };
+        write!(f, "{}", text)
+    }
 }
 
 impl Relational {

@@ -1,4 +1,6 @@
-use crate::datatypes::DataType;
+use std::fmt::Display;
+
+use crate::common::datatypes::DataType;
 
 use self::Arithmetic::*;
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -9,6 +11,19 @@ pub enum Arithmetic {
     Division,
     Modulo,
     Exponentiation,
+}
+
+impl Display for Arithmetic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Addition => write!(f, "+"),
+            Subtraction => write!(f, "-"),
+            Multiplication => write!(f, "*"),
+            Division => write!(f, "/"),
+            Modulo => write!(f, "%"),
+            Exponentiation => write!(f, "**"),
+        }
+    }
 }
 
 impl Arithmetic {
@@ -32,7 +47,7 @@ impl Arithmetic {
                         Err(_) => return DataType::NAN,
                     };
                     if result.fract() == 0.0 {
-                        DataType::Integer(result as i64)
+                        DataType::Integer(result as i128)
                     } else {
                         DataType::Float(result)
                     }
@@ -129,7 +144,7 @@ impl Arithmetic {
             (DataType::String(_), DataType::String(_)) => DataType::NAN,
             (DataType::String(a), DataType::Float(b)) => {
                 let mut result = String::new();
-                for _ in 0..b as i64 {
+                for _ in 0..b as i128 {
                     result += &a;
                 }
                 DataType::String(result)
@@ -146,7 +161,7 @@ impl Arithmetic {
             }
             (DataType::Float(a), DataType::String(b)) => {
                 let mut result = String::new();
-                for _ in 0..a as i64 {
+                for _ in 0..a as i128 {
                     result += &b;
                 }
                 DataType::String(result)
@@ -472,9 +487,9 @@ impl Arithmetic {
                 } else {
                     let result = (a as f64).powf(b as f64);
                     if result.fract() == 0.0 {
-                        DataType::Integer(result as i64)
+                        DataType::Integer(result as i128)
                     } else {
-                        DataType::Integer(result as i64)
+                        DataType::Integer(result as i128)
                     }
                 }
             }

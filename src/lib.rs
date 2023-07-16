@@ -1,11 +1,7 @@
 #![feature(let_chains, if_let_guard)]
-pub mod datatypes;
-pub mod errors;
+pub mod common;
 pub mod evaluator;
-pub mod expressions;
-pub mod keywords;
-pub mod lexer;
-pub mod operators;
-pub mod parser;
-pub mod symbols;
+pub mod lexical_analysis;
+pub mod semantic_analysis;
+pub mod syntax_analysis;
 pub mod test;

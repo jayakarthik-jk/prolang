@@ -1,4 +1,6 @@
-use crate::datatypes::DataType;
+use std::fmt::Display;
+
+use crate::common::datatypes::DataType;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {
@@ -6,6 +8,18 @@ pub enum Logical {
     Or,
     Not,
     Xor,
+}
+
+impl Display for Logical {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Logical::And => "and",
+            Logical::Or => "or",
+            Logical::Not => "not",
+            Logical::Xor => "xor",
+        };
+        write!(f, "{}", text)
+    }
 }
 
 impl Logical {

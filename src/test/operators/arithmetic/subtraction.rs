@@ -1,7 +1,7 @@
 #[cfg(test)]
-use crate::datatypes::DataType;
+use crate::common::datatypes::DataType;
 #[cfg(test)]
-use crate::operators::arithmetic::Arithmetic::Subtraction;
+use crate::common::operators::arithmetic::Arithmetic::Subtraction;
 
 #[test]
 fn subtraction_string() {

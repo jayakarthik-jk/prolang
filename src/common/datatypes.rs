@@ -4,7 +4,7 @@ use std::fmt::Display;
 pub enum DataType {
     String(String),
     Float(f64),
-    Integer(i64),
+    Integer(i128),
     Boolean(bool),
     Infinity,
     NAN,
@@ -29,7 +29,7 @@ impl DataType {
 impl Display for DataType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            DataType::String(a) => a.to_string(),
+            DataType::String(a) => format!("'{a}'"),
             DataType::Float(a) => a.to_string(),
             DataType::Integer(a) => a.to_string(),
             DataType::Boolean(a) => a.to_string(),

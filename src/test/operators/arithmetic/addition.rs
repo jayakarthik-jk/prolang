@@ -1,7 +1,7 @@
 #[cfg(test)]
-use crate::datatypes::DataType;
+use crate::common::datatypes::DataType;
 #[cfg(test)]
-use crate::operators::arithmetic::Arithmetic::Addition;
+use crate::common::operators::arithmetic::Arithmetic::Addition;
 #[test]
 fn addition_string() {
     assert_eq!(
