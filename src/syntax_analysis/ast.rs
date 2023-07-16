@@ -52,18 +52,18 @@ impl Display for AbstractSyntaxTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AbstractSyntaxTree::UnaryExpression(operator, operand) => {
-                write!(f, "({} {})", operator, operand)
+                write!(f, "{}{}", operator, operand)
             }
             AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
-                write!(f, "({} {} {})", operator, left, right)
+                write!(f, "{} {} {}", left, operator, right)
             }
             AbstractSyntaxTree::LiteralExpression(value) => write!(f, "{}", value),
             AbstractSyntaxTree::AssignmentExpression(identifier, equals, expression) => {
-                write!(f, "({} {} {})", identifier, equals, expression)
+                write!(f, "{} {} {}", identifier, equals, expression)
             }
             AbstractSyntaxTree::IdentifierExpression(value) => write!(f, "{}", value),
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
-                write!(f, "( ( ) {} )", expression)
+                write!(f, "( {} )", expression)
             }
         }
     }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::common::datatypes::DataType;
 pub struct SymbolTable {
@@ -10,6 +10,10 @@ impl SymbolTable {
         SymbolTable {
             variables: HashMap::new(),
         }
+    }
+
+    pub fn sharable() -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(SymbolTable::new()))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&String, &DataType)> {

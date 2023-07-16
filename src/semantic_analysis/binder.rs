@@ -1,16 +1,17 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::semantic_tree::SemanticTree;
 use crate::common::errors::CompilerError;
 use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::lexer::Token;
 use crate::lexical_analysis::lexer::TokenKind::IdentifierToken;
+use crate::semantic_analysis::semantic_tree::SemanticTree;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
 pub struct Binder {
     root: Box<AbstractSyntaxTree>,
     pub symbol_table: Rc<RefCell<SymbolTable>>,
+    pub display_process: bool,
 }
 
 impl Binder {
@@ -18,6 +19,7 @@ impl Binder {
         Self {
             root: Box::new(root),
             symbol_table,
+            display_process: false,
         }
     }
 
@@ -29,7 +31,9 @@ impl Binder {
         &self,
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
-        println!("binding expression: {}", expression);
+        if self.display_process {
+            println!("binding expression: {}", expression);
+        }
         match expression.as_ref() {
             AbstractSyntaxTree::LiteralExpression(token) => self.bind_literal_expression(token),
             AbstractSyntaxTree::IdentifierExpression(expression) => {
@@ -53,7 +57,9 @@ impl Binder {
     }
 
     fn bind_literal_expression(&self, token: &Rc<Token>) -> Result<SemanticTree, CompilerError> {
-        println!("binding literal: {}", token);
+        if self.display_process {
+            println!("binding literal: {}", token);
+        }
         Ok(SemanticTree::LiteralExpression(Rc::clone(token)))
     }
 
@@ -61,7 +67,9 @@ impl Binder {
         &self,
         identifier_token: &Rc<Token>,
     ) -> Result<SemanticTree, CompilerError> {
-        println!("binding identifier: {}", identifier_token);
+        if self.display_process {
+            println!("binding identifier: {}", identifier_token);
+        }
         if let IdentifierToken(name) = &identifier_token.kind {
             if self.symbol_table.borrow().variables.contains_key(name) {
                 Ok(SemanticTree::IdentifierExpression(Rc::clone(
@@ -81,6 +89,9 @@ impl Binder {
         operator_token: &Rc<Token>,
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
+        if self.display_process {
+            println!("binding unary: {} {}", operator_token, expression);
+        }
         let expression = self.bind_expression(expression)?;
 
         Ok(SemanticTree::UnaryExpression(
@@ -95,10 +106,7 @@ impl Binder {
         operator: &Rc<Token>,
         right: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
-        println!(
-            "binding binary, left: {}, operator: {}, right: {}",
-            left, operator, right
-        );
+        println!("binding binary: {} {} {}", left, operator, right);
         let left = self.bind_expression(left)?;
         let right = self.bind_expression(right)?;
 
@@ -116,7 +124,7 @@ impl Binder {
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
         println!(
-            "binding assignment, identifier: {}, operator: {}, expression: {}",
+            "binding assignment: {} {} {}",
             identifier_expression, operator, expression
         );
         let expression = self.bind_expression(expression)?;

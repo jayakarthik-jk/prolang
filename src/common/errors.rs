@@ -14,6 +14,7 @@ pub enum CompilerError {
     InvalidCharacter(char, usize, usize),
     InvalidNumber(String, usize, usize),
     UnterminatedString(usize, usize),
+    InvalidKeyword,
 
     // Syntax Errors
     UnexpectedToken(TokenKind, usize, usize),
@@ -85,6 +86,7 @@ impl Display for CompilerError {
                 line, column
             ),
             CompilerError::InvalidAssignment => "Invalid assignment".to_string(),
+            CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
         };
         write!(f, "{}", text.red())
     }

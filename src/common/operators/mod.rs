@@ -2,10 +2,10 @@ use std::fmt::Display;
 
 use crate::common::datatypes::DataType;
 use crate::common::errors::CompilerError;
-
-use self::{
-    arithmetic::Arithmetic, assignment::Assingment, logical::Logical, relational::Relational,
-};
+use crate::common::operators::arithmetic::Arithmetic;
+use crate::common::operators::assignment::Assingment;
+use crate::common::operators::logical::Logical;
+use crate::common::operators::relational::Relational;
 
 pub mod arithmetic;
 pub mod assignment;

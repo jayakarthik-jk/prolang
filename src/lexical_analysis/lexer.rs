@@ -8,6 +8,7 @@ use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
 use crate::common::operators::relational::Relational::*;
 use crate::common::operators::{Operator, Operator::*};
+use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::symbols::Symbol::{self, *};
 pub struct Lexer {
@@ -18,10 +19,11 @@ pub struct Lexer {
     current: char,
     pub line: usize,
     pub column: usize,
+    symbol_table: Rc<RefCell<SymbolTable>>,
 }
 
 impl Lexer {
-    pub fn new(source: String) -> Self {
+    pub fn new(source: String, symbol_table: Rc<RefCell<SymbolTable>>) -> Self {
         let source: Vec<u8> = source.bytes().collect();
         let current = if source.is_empty() {
             '\0'
@@ -37,6 +39,7 @@ impl Lexer {
             current,
             line: 1,
             column: 1,
+            symbol_table,
         }
     }
 
@@ -134,7 +137,7 @@ impl Lexer {
                 }
                 let word = &self.source[start..self.position];
                 let word = String::from_utf8_lossy(word);
-                Keyword::parse(word.to_string(), self.line, self.column - word.len())?
+                self.parse_keyword(word.to_string())
             }
             current if current == '\'' => {
                 self._next();
@@ -505,6 +508,18 @@ impl Lexer {
 
     pub fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
         Rc::new(Token::new(TokenKind::FactoryToken, line, column))
+    }
+
+    fn parse_keyword(&self, word: String) -> Token {
+        let keyword = Keyword::get_keyword_kind(&word);
+        if let TokenKind::IdentifierToken(name) = &keyword {
+            let mut symbol_table = self.symbol_table.borrow_mut();
+            symbol_table
+                .variables
+                .insert(name.clone(), DataType::Integer(0));
+        } else {
+        }
+        Token::new(keyword, self.line, self.column - word.len())
     }
 }
 
