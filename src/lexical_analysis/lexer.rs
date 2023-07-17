@@ -5,6 +5,7 @@ use crate::common::datatypes::DataType;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
+use crate::common::operators::logical::Logical::*;
 use crate::common::operators::relational::Relational::*;
 use crate::common::operators::Operator::*;
 use crate::common::symbol_table::SymbolTable;
@@ -14,7 +15,7 @@ use crate::lexical_analysis::symbols::Symbol::*;
 use super::token::{Token, TokenKind};
 pub struct Lexer {
     source: Vec<u8>,
-    pub tokens: Vec<Rc<Token>>,
+    tokens: Vec<Rc<Token>>,
     index: RefCell<usize>,
     position: usize,
     current: char,
@@ -46,6 +47,7 @@ impl Lexer {
 
     fn _next(&mut self) -> char {
         self.current = if self.position + 1 >= self.source.len() {
+            // self.position = self.source.len();
             '\0'
         } else {
             self.column += 1;
@@ -89,6 +91,7 @@ impl Lexer {
                 while self.current.is_ascii_digit() {
                     self._next();
                 }
+                println!("current: {:?}", self.current);
                 if self.current == '.' {
                     self._next();
                     while self.current.is_ascii_digit() {
@@ -112,7 +115,6 @@ impl Lexer {
                         self.column - number_as_string.len(),
                     )
                 } else {
-                    
                     let number_as_string = self.extract_string_from_start_to_current(start)?;
 
                     let number: i128 = match number_as_string.parse() {
@@ -233,6 +235,7 @@ impl Lexer {
                         self.line,
                         self.column,
                     );
+                    self._next();
                     self._next();
                     self._next();
                     token
@@ -382,6 +385,26 @@ impl Lexer {
                     token
                 }
             }
+            '!' => {
+                if self._peek(1) == '=' {
+                    let token = Token::new(
+                        TokenKind::OperatorToken(RelationalOperator(NotEquals)),
+                        self.line,
+                        self.column,
+                    );
+                    self._next();
+                    self._next();
+                    token
+                } else {
+                    let token = Token::new(
+                        TokenKind::OperatorToken(LogicalOperator(Not)),
+                        self.line,
+                        self.column,
+                    );
+                    self._next();
+                    token
+                }
+            }
 
             _ => {
                 return Err(CompilerError::InvalidCharacter(
@@ -393,17 +416,23 @@ impl Lexer {
         };
 
         Ok(current_token)
-        // return Ok(self.tokens.last().unwrap());
     }
 
-    pub fn extract_string_from_start_to_current(&self, start: usize) -> Result<String, CompilerError> {
+    pub fn extract_string_from_start_to_current(
+        &self,
+        start: usize,
+    ) -> Result<String, CompilerError> {
         let value = if self.position - start == 0 {
             vec![self.source[start]]
         } else {
-            self.source[start..self.position].to_vec()
+            if self.position + 1 == self.source.len() {
+                self.source[start..=self.position].to_vec()
+            } else {
+                self.source[start..self.position].to_vec()
+            }
         };
-        if let Ok(value) = String::from_utf8(value) {
-            Ok(value)
+        if let Ok(value_as_string) = String::from_utf8(value) {
+            Ok(value_as_string)
         } else {
             Err(CompilerError::InvalidUtf8Character)
         }
@@ -525,11 +554,12 @@ impl Lexer {
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);
         let mut symbol_table = self.symbol_table.borrow_mut();
-        if let TokenKind::IdentifierToken(name) = &keyword
-        && !symbol_table.variables.contains_key(name) {
-            symbol_table
-                .variables
-                .insert(name.clone(), DataType::InternalUndefined);
+        if let TokenKind::IdentifierToken(name) = &keyword {
+            if !symbol_table.variables.contains_key(name) {
+                symbol_table
+                    .variables
+                    .insert(name.clone(), DataType::InternalUndefined);
+            }
         }
         Token::new(keyword, self.line, self.column - word.len())
     }

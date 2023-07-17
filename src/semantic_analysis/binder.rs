@@ -74,9 +74,12 @@ impl Binder {
         if let IdentifierToken(name) = &identifier_token.kind {
             let table = self.symbol_table.borrow();
             let variable = table.variables.get(name);
-            if let Some(value) = variable
-            && value != &DataType::InternalUndefined {
-                Ok(SemanticTree::IdentifierExpression(identifier_token.clone()))
+            if let Some(value) = variable {
+                if value != &DataType::InternalUndefined {
+                    Ok(SemanticTree::IdentifierExpression(identifier_token.clone()))
+                } else {
+                    Err(CompilerError::UndefinedVariable(name.clone()))
+                }
             } else {
                 Err(CompilerError::UndefinedVariable(name.clone()))
             }

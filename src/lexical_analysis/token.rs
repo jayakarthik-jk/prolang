@@ -4,7 +4,6 @@ use crate::common::{datatypes::DataType, operators::Operator};
 
 use super::{keywords::Keyword, symbols::Symbol};
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
