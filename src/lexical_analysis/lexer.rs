@@ -14,7 +14,7 @@ use crate::lexical_analysis::symbols::Symbol::*;
 use super::token::{Token, TokenKind};
 pub struct Lexer {
     source: Vec<u8>,
-    tokens: Vec<Rc<Token>>,
+    pub tokens: Vec<Rc<Token>>,
     index: RefCell<usize>,
     position: usize,
     current: char,
@@ -94,15 +94,15 @@ impl Lexer {
                     while self.current.is_ascii_digit() {
                         self._next();
                     }
-                    let number = &self.source[start..self.position];
-                    let number_as_string = String::from_utf8_lossy(number);
+                    let number_as_string = self.extract_string_from_start_to_current(start)?;
                     let number: f64 = match number_as_string.parse() {
                         Ok(number) => number,
                         Err(_) => {
+                            let len = number_as_string.len();
                             return Err(CompilerError::InvalidNumber(
-                                number_as_string.to_string(),
+                                number_as_string,
                                 self.line,
-                                self.column - number_as_string.len(),
+                                self.column - len,
                             ));
                         }
                     };
@@ -112,8 +112,9 @@ impl Lexer {
                         self.column - number_as_string.len(),
                     )
                 } else {
-                    let number = &self.source[start..self.position];
-                    let number_as_string = String::from_utf8_lossy(number);
+                    
+                    let number_as_string = self.extract_string_from_start_to_current(start)?;
+
                     let number: i128 = match number_as_string.parse() {
                         Ok(number) => number,
                         Err(_) => {
@@ -136,9 +137,8 @@ impl Lexer {
                 while self.current.is_ascii_alphanumeric() || self.current == '_' {
                     self._next();
                 }
-                let word = &self.source[start..self.position];
-                let word = String::from_utf8_lossy(word);
-                self.parse_keyword(word.to_string())
+                let word = self.extract_string_from_start_to_current(start)?;
+                self.parse_keyword(word)
             }
             current if current == '\'' => {
                 self._next();
@@ -147,8 +147,7 @@ impl Lexer {
                     // TODO: Handle escape characters
                 }
                 let string = if self.current == '\'' {
-                    let string = &self.source[start..self.position];
-                    let string = String::from_utf8_lossy(string);
+                    let string = self.extract_string_from_start_to_current(start)?;
                     string
                 } else {
                     return Err(CompilerError::UnterminatedString(
@@ -171,8 +170,7 @@ impl Lexer {
                     // TODO: Handle escape characters
                 }
                 let string = if self.current == '\"' {
-                    let string = &self.source[start..self.position];
-                    let string = String::from_utf8_lossy(string);
+                    let string = self.extract_string_from_start_to_current(start)?;
                     string
                 } else {
                     return Err(CompilerError::UnterminatedString(
@@ -396,6 +394,19 @@ impl Lexer {
 
         Ok(current_token)
         // return Ok(self.tokens.last().unwrap());
+    }
+
+    pub fn extract_string_from_start_to_current(&self, start: usize) -> Result<String, CompilerError> {
+        let value = if self.position - start == 0 {
+            vec![self.source[start]]
+        } else {
+            self.source[start..self.position].to_vec()
+        };
+        if let Ok(value) = String::from_utf8(value) {
+            Ok(value)
+        } else {
+            Err(CompilerError::InvalidUtf8Character)
+        }
     }
 
     pub fn lex_with_whitespace(&mut self) -> Result<(), CompilerError> {

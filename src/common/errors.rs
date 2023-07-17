@@ -40,6 +40,7 @@ pub enum CompilerError {
     UnsupportedOperationBetween(DataType, Operator, DataType),
     MathUndefined,
     OperationOnUndefined,
+    InvalidUtf8Character,
 }
 
 impl Display for CompilerError {
@@ -108,6 +109,7 @@ impl Display for CompilerError {
             CompilerError::OperationOnUndefined => {
                 "Cannot perform operation on Undefined".to_string()
             }
+            CompilerError::InvalidUtf8Character => "Invalid UTF-8 character".to_string(),
         };
         write!(f, "{}", text.red())
     }
