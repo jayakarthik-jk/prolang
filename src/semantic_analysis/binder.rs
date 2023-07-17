@@ -4,8 +4,8 @@ use std::rc::Rc;
 use crate::common::datatypes::DataType;
 use crate::common::errors::CompilerError;
 use crate::common::symbol_table::SymbolTable;
-use crate::lexical_analysis::lexer::Token;
-use crate::lexical_analysis::lexer::TokenKind::IdentifierToken;
+use crate::lexical_analysis::token::Token;
+use crate::lexical_analysis::token::TokenKind::IdentifierToken;
 use crate::semantic_analysis::semantic_tree::SemanticTree;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 

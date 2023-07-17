@@ -3,7 +3,7 @@ use std::fmt::Display;
 use colored::Colorize;
 
 use crate::common::operators::Operator;
-use crate::lexical_analysis::lexer::TokenKind;
+use crate::lexical_analysis::token::TokenKind;
 
 use super::datatypes::DataType;
 
@@ -32,7 +32,7 @@ pub enum CompilerError {
 
     // Semantic Errors
     UndefinedVariable(String),
-    InvalidTokenAsIdentifier(crate::lexical_analysis::lexer::TokenKind),
+    InvalidTokenAsIdentifier(TokenKind),
     InvalidExpressionAssignment(usize, usize),
     InvalidAssignment,
     InvalidStringParsing(DataType),

@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::fmt::Display;
 use std::rc::Rc;
 
 use crate::common::datatypes::DataType;
@@ -7,10 +6,12 @@ use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
 use crate::common::operators::relational::Relational::*;
-use crate::common::operators::{Operator, Operator::*};
+use crate::common::operators::Operator::*;
 use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
-use crate::lexical_analysis::symbols::Symbol::{self, *};
+use crate::lexical_analysis::symbols::Symbol::*;
+
+use super::token::{Token, TokenKind};
 pub struct Lexer {
     source: Vec<u8>,
     tokens: Vec<Rc<Token>>,
@@ -520,52 +521,5 @@ impl Lexer {
                 .insert(name.clone(), DataType::InternalUndefined);
         }
         Token::new(keyword, self.line, self.column - word.len())
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub line: usize,
-    pub column: usize,
-}
-
-impl Token {
-    pub fn new(kind: TokenKind, line: usize, column: usize) -> Self {
-        Self { kind, line, column }
-    }
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<{}>", self.kind)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TokenKind {
-    LiteralToken(DataType),
-    /// number of whitespace
-    WhitespaceToken(usize),
-    NewLineToken,
-    OperatorToken(Operator),
-    KeywordToken(Keyword),
-    SymbolToken(Symbol),
-    FactoryToken,
-    IdentifierToken(String),
-}
-
-impl Display for TokenKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TokenKind::LiteralToken(a) => write!(f, "{}", a),
-            TokenKind::WhitespaceToken(a) => write!(f, "{}", a),
-            TokenKind::NewLineToken => write!(f, "NewLineToken"),
-            TokenKind::OperatorToken(a) => write!(f, "{}", a),
-            TokenKind::KeywordToken(a) => write!(f, "{}", a),
-            TokenKind::SymbolToken(a) => write!(f, "{}", a),
-            TokenKind::FactoryToken => write!(f, "FactoryToken"),
-            TokenKind::IdentifierToken(a) => write!(f, "{}", a),
-        }
     }
 }

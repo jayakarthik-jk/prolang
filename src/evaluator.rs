@@ -10,7 +10,7 @@ use crate::common::operators::Operator::{
     self, ArithmeticOperator, LogicalOperator, RelationalOperator,
 };
 use crate::common::symbol_table::SymbolTable;
-use crate::lexical_analysis::lexer::TokenKind;
+use crate::lexical_analysis::token::TokenKind;
 use crate::semantic_analysis::semantic_tree::SemanticTree;
 
 pub struct Evaluator {

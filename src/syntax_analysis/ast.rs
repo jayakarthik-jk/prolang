@@ -1,6 +1,6 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::lexical_analysis::lexer::Token;
+use crate::lexical_analysis::token::Token;
 
 #[derive(Debug, PartialEq)]
 pub enum AbstractSyntaxTree {

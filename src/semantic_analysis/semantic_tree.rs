@@ -1,4 +1,4 @@
-use crate::lexical_analysis::lexer::Token;
+use crate::lexical_analysis::token::Token;
 use std::rc::Rc;
 
 pub enum SemanticTree {

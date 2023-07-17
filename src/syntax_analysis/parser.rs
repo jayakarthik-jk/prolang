@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::operators::Operator::*;
-use crate::lexical_analysis::lexer::{Lexer, TokenKind, Token};
+use crate::lexical_analysis::lexer::Lexer;
+use crate::lexical_analysis::token::{TokenKind, Token};
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 use crate::lexical_analysis::symbols::Symbol::*;
 use crate::common::errors::CompilerError;

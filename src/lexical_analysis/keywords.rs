@@ -3,9 +3,9 @@ use std::fmt::Display;
 use crate::common::datatypes::DataType::Boolean;
 use crate::common::operators::logical::Logical;
 use crate::common::operators::Operator::LogicalOperator;
-use crate::lexical_analysis::lexer::TokenKind::*;
+use crate::lexical_analysis::token::TokenKind::*;
 
-use super::lexer::TokenKind;
+use super::token::TokenKind;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
