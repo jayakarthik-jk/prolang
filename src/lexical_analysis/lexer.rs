@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
@@ -66,20 +66,18 @@ impl Lexer {
     }
 
     pub fn parse_token(&mut self) -> Result<Token, CompilerError> {
-        if self.current.is_ascii_whitespace() {
-            let start = self.position;
-            while self.current.is_ascii_whitespace() {
-                self._next();
-            }
-            let count = self.position - start;
-            let token = Token::new(TokenKind::WhitespaceToken(count), self.line, self.column);
-            return Ok(token);
-        }
-
         let current_token = match self.current {
-            '\r' if self._peek(1) == '\n' => {
+            current if current.is_ascii_whitespace() => {
+                let start = self.position;
+                while self.current.is_ascii_whitespace() {
+                    self._next();
+                }
+                let count = self.position - start;
+                let token = Token::new(TokenKind::WhitespaceToken(count), self.line, self.column);
+                return Ok(token);
+            }
+            '\n' => {
                 let token = Token::new(TokenKind::NewLineToken, self.line, self.column);
-                self._next();
                 self._next();
                 self.line += 1;
                 self.column = 1;
@@ -91,7 +89,6 @@ impl Lexer {
                 while self.current.is_ascii_digit() {
                     self._next();
                 }
-                println!("current: {:?}", self.current);
                 if self.current == '.' {
                     self._next();
                     while self.current.is_ascii_digit() {
@@ -110,7 +107,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::LiteralToken(DataType::Float(number)),
+                        TokenKind::LiteralToken(Variable::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -128,7 +125,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::LiteralToken(DataType::Integer(number)),
+                        TokenKind::LiteralToken(Variable::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -158,7 +155,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(DataType::String(string.to_string())),
+                    TokenKind::LiteralToken(Variable::from(string.to_string())),
                     self.line,
                     self.column - string.len(),
                 );
@@ -181,7 +178,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(DataType::String(string.to_string())),
+                    TokenKind::LiteralToken(Variable::from(string.to_string())),
                     self.line,
                     self.column - string.len(),
                 );
@@ -425,7 +422,7 @@ impl Lexer {
         let value = if self.position - start == 0 {
             vec![self.source[start]]
         } else {
-            if self.position + 1 == self.source.len() {
+            if self.current == '\0' {
                 self.source[start..=self.position].to_vec()
             } else {
                 self.source[start..self.position].to_vec()
@@ -553,12 +550,13 @@ impl Lexer {
 
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);
-        let mut symbol_table = self.symbol_table.borrow_mut();
+        let symbol_table = self.symbol_table.borrow_mut();
         if let TokenKind::IdentifierToken(name) = &keyword {
             if !symbol_table.variables.contains_key(name) {
-                symbol_table
-                    .variables
-                    .insert(name.clone(), DataType::InternalUndefined);
+                // symbol_table
+                //     .variables
+                //     .insert(name.clone(), Variable::InternalUndefined);
+                // TODO
             }
         }
         Token::new(keyword, self.line, self.column - word.len())

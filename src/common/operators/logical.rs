@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use crate::common::{datatypes::DataType, errors::CompilerError};
+use crate::common::{datatypes::Variable, errors::CompilerError};
+use crate::common::datatypes::DataType::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {
@@ -23,7 +24,7 @@ impl Display for Logical {
 }
 
 impl Logical {
-    pub fn evaluate(&self, a: DataType, b: DataType) -> DataType {
+    pub fn evaluate(&self, a: Variable, b: Variable) -> Variable {
         match self {
             Logical::And => {
                 if !a.is_truthy() {
@@ -39,22 +40,22 @@ impl Logical {
                     b
                 }
             }
-            Logical::Xor => DataType::Boolean(a.is_truthy() ^ b.is_truthy()),
-            _ => DataType::Boolean(false),
+            Logical::Xor => Variable::from(a.is_truthy() ^ b.is_truthy()),
+            _ => Variable::from(false),
         }
     }
 
-    pub fn evaluate_unary(&self, a: DataType) -> Result<DataType, CompilerError> {
+    pub fn evaluate_unary(&self, a: Variable) -> Result<Variable, CompilerError> {
         let result = match self {
-            Logical::Not => match a {
-                DataType::Boolean(a) => DataType::Boolean(!a),
-                DataType::String(a) => DataType::Boolean(a.len() > 0),
-                DataType::Float(a) => DataType::Boolean(a != 0.0),
-                DataType::Integer(a) => DataType::Boolean(a != 0),
-                DataType::Infinity => DataType::Infinity,
-                DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
+            Logical::Not => match a.value {
+                Boolean(a) => Variable::from(!a),
+                String(a) => Variable::from(a.len() > 0),
+                Float(a) => Variable::from(a != 0.0),
+                Integer(a) => Variable::from(a != 0),
+                Infinity => Variable::from(Infinity),
+                InternalUndefined => return Err(CompilerError::OperationOnUndefined),
             },
-            _ => DataType::Boolean(false),
+            _ => Variable::from(false),
         };
         Ok(result)
     }

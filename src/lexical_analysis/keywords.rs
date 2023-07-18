@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::DataType::Boolean;
+use crate::common::datatypes::Variable;
 use crate::common::operators::logical::Logical;
 use crate::common::operators::Operator::LogicalOperator;
 use crate::lexical_analysis::token::TokenKind::*;
@@ -16,8 +16,8 @@ pub enum Keyword {
 impl Keyword {
     pub fn get_keyword_kind(keyword: &str) -> TokenKind {
         let token = match keyword {
-            "true" => LiteralToken(Boolean(true)),
-            "false" => LiteralToken(Boolean(false)),
+            "true" => LiteralToken(Variable::from(true)),
+            "false" => LiteralToken(Variable::from(false)),
             "and" => OperatorToken(LogicalOperator(Logical::And)),
             "or" => OperatorToken(LogicalOperator(Logical::Or)),
             "not" => OperatorToken(LogicalOperator(Logical::Not)),

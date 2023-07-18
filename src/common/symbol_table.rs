@@ -1,8 +1,8 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::Variable;
 pub struct SymbolTable {
-    pub variables: HashMap<String, DataType>,
+    pub variables: HashMap<String, Variable>,
 }
 
 impl SymbolTable {
@@ -16,7 +16,7 @@ impl SymbolTable {
         Rc::new(RefCell::new(SymbolTable::new()))
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &DataType)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &Variable)> {
         self.variables.iter()
     }
 

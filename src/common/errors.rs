@@ -5,7 +5,7 @@ use colored::Colorize;
 use crate::common::operators::Operator;
 use crate::lexical_analysis::token::TokenKind;
 
-use super::datatypes::DataType;
+use super::datatypes::Variable;
 
 #[derive(Debug, PartialEq)]
 pub enum CompilerError {
@@ -35,9 +35,9 @@ pub enum CompilerError {
     InvalidTokenAsIdentifier(TokenKind),
     InvalidExpressionAssignment(usize, usize),
     InvalidAssignment,
-    InvalidStringParsing(DataType),
+    InvalidStringParsing(Variable),
     InvalidUneryOperation,
-    UnsupportedOperationBetween(DataType, Operator, DataType),
+    UnsupportedOperationBetween(Variable, Operator, Variable),
     MathUndefined,
     OperationOnUndefined,
     InvalidUtf8Character,

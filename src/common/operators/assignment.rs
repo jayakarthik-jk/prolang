@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::common::operators::Arithmetic::*;
-use crate::common::{datatypes::DataType, errors::CompilerError};
+use crate::common::{datatypes::Variable, errors::CompilerError};
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Assingment {
     SimpleAssignment,
@@ -29,7 +29,7 @@ impl Display for Assingment {
 }
 
 impl Assingment {
-    pub fn evaluate(&self, a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+    pub fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
             Assingment::SimpleAssignment => return Err(CompilerError::InvalidAssignment),
             Assingment::AdditionAssignment => Addition.evaluate(a, b),

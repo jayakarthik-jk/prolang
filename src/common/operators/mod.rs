@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic;
 use crate::common::operators::assignment::Assingment;
@@ -21,7 +21,7 @@ pub enum Operator {
 }
 
 impl Operator {
-    pub fn evaluate(&self, a: DataType, b: DataType) -> Result<DataType, CompilerError> {
+    pub fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
             Operator::ArithmeticOperator(arithmetic) => arithmetic.evaluate(a, b),
             Operator::RelationalOperator(relational) => Ok(relational.evaluate(a, b)),

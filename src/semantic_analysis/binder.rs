@@ -74,8 +74,8 @@ impl Binder {
         if let IdentifierToken(name) = &identifier_token.kind {
             let table = self.symbol_table.borrow();
             let variable = table.variables.get(name);
-            if let Some(value) = variable {
-                if value != &DataType::InternalUndefined {
+            if let Some(variable) = variable {
+                if variable.value != DataType::InternalUndefined {
                     Ok(SemanticTree::IdentifierExpression(identifier_token.clone()))
                 } else {
                     Err(CompilerError::UndefinedVariable(name.clone()))
@@ -111,7 +111,9 @@ impl Binder {
         operator: &Rc<Token>,
         right: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
-        println!("binding binary: {} {} {}", left, operator, right);
+        if self.display_process {
+            println!("binding binary: {} {} {}", left, operator, right);
+        }
         let left = self.bind_expression(left)?;
         let right = self.bind_expression(right)?;
 
@@ -128,10 +130,12 @@ impl Binder {
         operator: &Rc<Token>,
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
-        println!(
-            "binding assignment: {} {} {}",
-            identifier_expression, operator, expression
-        );
+        if self.display_process {
+            println!(
+                "binding assignment: {} {} {}",
+                identifier_expression, operator, expression
+            );
+        }
         let expression = self.bind_expression(expression)?;
 
         match identifier_expression.as_ref() {

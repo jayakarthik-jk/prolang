@@ -13,13 +13,15 @@ fn main() {
 
 fn console_mode() {
     let stdin = stdin();
-    let mut display_progress = true;
+    let mut display_progress = false;
     let symbol_table = SymbolTable::sharable();
     loop {
-        println!("Enter expression:");
+        println!("$:");
 
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
+
+        // println!("{:?}", input);
 
         if let std::cmp::Ordering::Equal = input.trim().cmp(&"progress()".to_string()) {
             display_progress = !display_progress;
@@ -80,6 +82,6 @@ fn console_mode() {
             symbol_table.borrow().print();
             println!("-------------");
         }
-        println!("Result: {}", result);
+        println!("{}", result);
     }
 }

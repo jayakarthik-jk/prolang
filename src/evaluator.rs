@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment;
@@ -26,11 +26,11 @@ impl Evaluator {
         }
     }
 
-    pub fn evaluate(&self) -> Result<DataType, CompilerError> {
+    pub fn evaluate(&self) -> Result<Variable, CompilerError> {
         self._evaluate(&self.root)
     }
 
-    fn _evaluate(&self, root: &Box<SemanticTree>) -> Result<DataType, CompilerError> {
+    fn _evaluate(&self, root: &Box<SemanticTree>) -> Result<Variable, CompilerError> {
         match root.as_ref() {
             SemanticTree::LiteralExpression(literal) => {
                 if let TokenKind::LiteralToken(literal) = &literal.kind {
@@ -42,7 +42,6 @@ impl Evaluator {
             SemanticTree::BinaryExpression(left, operator, right) => {
                 let left = self._evaluate(left)?;
                 let right = self._evaluate(right)?;
-                println!("left: {:?}, right: {:?}", left, right);
                 match &operator.kind {
                     TokenKind::OperatorToken(operator) => {
                         let result = match operator {

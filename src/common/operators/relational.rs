@@ -1,6 +1,6 @@
 use std::fmt::Display;
-
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::Variable;
+use crate::common::datatypes::DataType::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Relational {
@@ -27,56 +27,58 @@ impl Display for Relational {
 }
 
 impl Relational {
-    pub fn evaluate(&self, a: DataType, b: DataType) -> DataType {
-        match self {
-            Relational::Equals => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a == b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a == b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a == b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a == b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                _ => DataType::Boolean(false),
+    pub fn evaluate(&self, a: Variable, b: Variable) -> Variable {
+        let result = match self {
+            Relational::Equals => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a == b),
+                (Float(a), Float(b)) => Boolean(a == b),
+                (Integer(a), Integer(b)) => Boolean(a == b),
+                (Boolean(a), Boolean(b)) => Boolean(a == b),
+                (Infinity, Infinity) => Boolean(true),
+                _ => Boolean(false),
             },
-            Relational::NotEquals => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a != b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a != b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a != b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a != b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                _ => DataType::Boolean(true),
+            Relational::NotEquals => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a != b),
+                (Float(a), Float(b)) => Boolean(a != b),
+                (Integer(a), Integer(b)) => Boolean(a != b),
+                (Boolean(a), Boolean(b)) => Boolean(a != b),
+                (Infinity, Infinity) => Boolean(false),
+                _ => Boolean(true),
             },
-            Relational::LessThan => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a < b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a < b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a < b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a < b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                _ => DataType::Boolean(false),
+            Relational::LessThan => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a < b),
+                (Float(a), Float(b)) => Boolean(a < b),
+                (Integer(a), Integer(b)) => Boolean(a < b),
+                (Boolean(a), Boolean(b)) => Boolean(a < b),
+                (Infinity, Infinity) => Boolean(false),
+                _ => Boolean(false),
             },
-            Relational::LessThanOrEquals => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a <= b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a <= b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a <= b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a <= b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                _ => DataType::Boolean(false),
+            Relational::LessThanOrEquals => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a <= b),
+                (Float(a), Float(b)) => Boolean(a <= b),
+                (Integer(a), Integer(b)) => Boolean(a <= b),
+                (Boolean(a), Boolean(b)) => Boolean(a <= b),
+                (Infinity, Infinity) => Boolean(true),
+                _ => Boolean(false),
             },
-            Relational::GreaterThan => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a > b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a > b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a > b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a > b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(false),
-                _ => DataType::Boolean(false),
+            Relational::GreaterThan => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a > b),
+                (Float(a), Float(b)) => Boolean(a > b),
+                (Integer(a), Integer(b)) => Boolean(a > b),
+                (Boolean(a), Boolean(b)) => Boolean(a > b),
+                (Infinity, Infinity) => Boolean(false),
+                _ => Boolean(false),
             },
-            Relational::GreaterThanOrEquals => match (a, b) {
-                (DataType::String(a), DataType::String(b)) => DataType::Boolean(a >= b),
-                (DataType::Float(a), DataType::Float(b)) => DataType::Boolean(a >= b),
-                (DataType::Integer(a), DataType::Integer(b)) => DataType::Boolean(a >= b),
-                (DataType::Boolean(a), DataType::Boolean(b)) => DataType::Boolean(a >= b),
-                (DataType::Infinity, DataType::Infinity) => DataType::Boolean(true),
-                _ => DataType::Boolean(false),
+            Relational::GreaterThanOrEquals => match (a.value, b.value) {
+                (String(a), String(b)) => Boolean(a >= b),
+                (Float(a), Float(b)) => Boolean(a >= b),
+                (Integer(a), Integer(b)) => Boolean(a >= b),
+                (Boolean(a), Boolean(b)) => Boolean(a >= b),
+                (Infinity, Infinity) => Boolean(true),
+                _ => Boolean(false),
             },
-        }
+        };
+
+        Variable::from(result)
     }
 }
