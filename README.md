@@ -14,31 +14,6 @@ for mutable variables, use the `mutable` keyword
 mutable is_gwen_alive = true
 ```
 
-## Handling null
-you cannot store null in a variable
-unless you explicitly declare it as nullable
-
-```
-# nullable variables does not need to be initialized. they are null by default
-nullable brain
-
-# if you want you can initialize it with null
-nullable name = null
-# or
-nullable name = "peter parker"
-```
-
-## operations on nullable variables
-you cannot perform any operation on a nullable variable without checking if it is null or not
-```
-nullable name = null
-if name is null {
-    print("name is null")
-} else {
-    print("name is not null")
-}
-```
-
 ## conditional statements
 ```
 
@@ -95,10 +70,35 @@ else loop until a < 100 {
 ```
 `note:` you can use $ to interpolate variables in strings
 
+## Handling null
+you cannot store null in a variable
+unless you explicitly declare it as nullable
+
+```
+# nullable variables does not need to be initialized. they are null by default
+nullable brain
+
+# if you want you can initialize it with null
+nullable name = null
+# or
+nullable name = "peter parker"
+```
+`note:` nullable variables are immutable by default
+
+## operations on nullable variables
+you cannot perform any operation on a nullable variable without checking if it is null or not
+```
+nullable name = null
+if name is null {
+    print("name is null")
+} else {
+    print("name is not null")
+}
+```
+
 ## function declaration
-`note: ` functions are in beta.
-the api may change in future.
-ofcourse, the entire language is in beta.
+`note: ` 
+### functions are in beta. the api may change in future. ofcourse, the entire language is in beta.
 
 ```
 function add(a, b) {
