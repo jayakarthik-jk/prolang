@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::common::datatypes::{DataType, Variable};
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::Operator;
 use crate::common::symbol_table::SymbolTable;
@@ -10,15 +7,13 @@ use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
 pub struct Binder {
     root: Box<AbstractSyntaxTree>,
-    pub symbol_table: Rc<RefCell<SymbolTable>>,
     pub display_process: bool,
 }
 
 impl Binder {
-    pub fn new(root: AbstractSyntaxTree, symbol_table: Rc<RefCell<SymbolTable>>) -> Self {
+    pub fn new(root: AbstractSyntaxTree) -> Self {
         Self {
             root: Box::new(root),
-            symbol_table,
             display_process: false,
         }
     }
@@ -68,14 +63,8 @@ impl Binder {
             println!("binding identifier: {}", name);
         }
 
-        let table = self.symbol_table.borrow();
-        let variable = table.variables.get(&name);
-        if let Some(variable) = variable {
-            if variable.value != DataType::InternalUndefined {
-                Ok(SemanticTree::IdentifierExpression(name))
-            } else {
-                Err(CompilerError::UndefinedVariable(name))
-            }
+        if SymbolTable::contains(&name) {
+            Ok(SemanticTree::IdentifierExpression(name))
         } else {
             Err(CompilerError::UndefinedVariable(name))
         }

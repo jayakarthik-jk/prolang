@@ -14,7 +14,6 @@ fn main() {
 fn console_mode() {
     let stdin = stdin();
     let mut display_progress = false;
-    let symbol_table = SymbolTable::sharable();
     loop {
         println!("$:");
 
@@ -31,7 +30,7 @@ fn console_mode() {
             break;
         }
 
-        let mut lexer = Lexer::new(input, symbol_table.clone());
+        let mut lexer = Lexer::new(input);
 
         if let Err(error) = lexer.lex() {
             eprintln!("lexer error: {}", error);
@@ -53,7 +52,7 @@ fn console_mode() {
             }
         };
 
-        let mut binder = Binder::new(ast, symbol_table.clone());
+        let mut binder = Binder::new(ast);
 
         binder.display_process = display_progress;
 
@@ -67,7 +66,7 @@ fn console_mode() {
 
         // SemanticTree::print(&semantic_tree);
 
-        let evaluator = Evaluator::new(semantic_tree, symbol_table.clone());
+        let evaluator = Evaluator::new(semantic_tree);
 
         let result = match evaluator.evaluate() {
             Ok(result) => result,
@@ -79,7 +78,7 @@ fn console_mode() {
         if display_progress {
             println!("Symbol table:");
             println!("-------------");
-            symbol_table.borrow().print();
+            SymbolTable::print();
             println!("-------------");
         }
         println!("{}", result);

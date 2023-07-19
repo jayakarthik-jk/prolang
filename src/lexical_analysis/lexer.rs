@@ -4,7 +4,6 @@ use std::rc::Rc;
 use super::token::{Token, TokenKind};
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
-use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::symbols::Symbol::*;
 
@@ -16,11 +15,10 @@ pub struct Lexer {
     current: char,
     pub line: usize,
     pub column: usize,
-    symbol_table: Rc<RefCell<SymbolTable>>,
 }
 
 impl Lexer {
-    pub fn new(source: String, symbol_table: Rc<RefCell<SymbolTable>>) -> Self {
+    pub fn new(source: String) -> Self {
         let source: Vec<u8> = source.bytes().collect();
         let current = if source.is_empty() {
             '\0'
@@ -36,7 +34,6 @@ impl Lexer {
             current,
             line: 1,
             column: 1,
-            symbol_table,
         }
     }
 
@@ -385,15 +382,6 @@ impl Lexer {
 
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);
-        let symbol_table = self.symbol_table.borrow_mut();
-        if let TokenKind::IdentifierToken(name) = &keyword {
-            if !symbol_table.variables.contains_key(name) {
-                // symbol_table
-                //     .variables
-                //     .insert(name.clone(), Variable::InternalUndefined);
-                // TODO
-            }
-        }
         Token::new(keyword, self.line, self.column - word.len())
     }
 }

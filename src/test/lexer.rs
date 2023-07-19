@@ -2,10 +2,8 @@
 
 /// only for testing purposes
 fn get_lexer(source: String) -> crate::lexical_analysis::lexer::Lexer {
-    use crate::common::symbol_table::SymbolTable;
     use crate::lexical_analysis::lexer::Lexer;
-    let symbol_table = SymbolTable::sharable();
-    let mut lexer = Lexer::new(source, symbol_table);
+    let mut lexer = Lexer::new(source);
     lexer.lex().unwrap();
     lexer
 }

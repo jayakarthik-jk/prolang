@@ -8,6 +8,7 @@ pub enum DataType {
     Boolean(bool),
     Infinity,
     InternalUndefined,
+    Null,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -26,6 +27,7 @@ impl Variable {
             DataType::Boolean(a) => a,
             DataType::Infinity => true,
             DataType::InternalUndefined => false,
+            DataType::Null => false,
         }
     }
     pub fn is_falsy(&self) -> bool {
@@ -121,6 +123,7 @@ impl Display for Variable {
             DataType::Boolean(a) => a.to_string(),
             DataType::Infinity => "Infinity".to_string(),
             DataType::InternalUndefined => "Undefined".to_string(),
+            DataType::Null => "Null".to_string(),
         };
         write!(f, "{text}")
     }

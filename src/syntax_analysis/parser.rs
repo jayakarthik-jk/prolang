@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-
+use crate::common::datatypes::{Variable, DataType};
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
@@ -7,6 +6,7 @@ use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational::*;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
+use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::lexer::Lexer;
 use crate::lexical_analysis::symbols::Symbol::*;
@@ -15,14 +15,12 @@ use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
 pub struct Parser {
     lexer: Lexer,
-    pub diagnostics: RefCell<Vec<CompilerError>>,
 }
 
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         Self {
             lexer,
-            diagnostics: RefCell::new(Vec::new()),
         }
     }
 
@@ -39,32 +37,101 @@ impl Parser {
 
     fn parse_assignment_expression(&self) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
-
-        if let TokenKind::IdentifierToken(name) = &identifier_token.kind {
-            if let Some((operator, length)) = self.get_operator(1) {
-                if let AssignmentOperator(_) = operator {
-                    for _ in 0..length {
-                        self.lexer.advance();
-                    }
-                    let expression = self.parse_assignment_expression()?;
-
-                    Ok(AbstractSyntaxTree::AssignmentExpression(
-                        Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
-                        operator,
-                        Box::new(expression),
-                    ))
-                } else {
-                    let expression = self.parse_arithmetic_expression(0)?;
-                    Ok(expression)
+        match &identifier_token.kind {
+            TokenKind::KeywordToken(keyword) => {
+                match keyword {
+                    Keyword::Mutable => {
+                        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
+                            if let Some((operator, length)) = self.get_operator(2) {
+                                if let AssignmentOperator(SimpleAssignment) = operator {
+                                    for _ in 0..length {
+                                        self.lexer.advance();
+                                    }
+                                    let expression = self.parse_assignment_expression()?;
+                                    if SymbolTable::contains(variable_name) {
+                                        SymbolTable::add(variable_name.to_string(), Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value));
+                                    } else {
+                                        SymbolTable::add(variable_name.to_string(), Variable::new_mutable(DataType::Null));
+                                    }
+                                    
+                                    Ok(AbstractSyntaxTree::AssignmentExpression(
+                                        Box::new(AbstractSyntaxTree::IdentifierExpression(variable_name.to_string())),
+                                        operator,
+                                        Box::new(expression),
+                                    ))
+                                } else {
+                                    // Error because mutable with compound assignment
+                                    Err(CompilerError::InvalidUseOfMutableKeyword)
+                                }
+                            } else {
+                                // Error because mutable without assignment
+                                if SymbolTable::contains(variable_name) {
+                                    self.lexer.advance();
+                                    self.lexer.advance();    
+                                    SymbolTable::add(variable_name.to_string(), Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value));
+                                    Ok(AbstractSyntaxTree::IdentifierExpression(variable_name.to_string()))
+                                } else {
+                                    Err(CompilerError::NullInitializationOfNonNullableVariable)
+                                }
+                            }
+                        } else {
+                            Err(CompilerError::InvalidUseOfMutableKeyword)
+                        }
+                    },
+                    _ => {
+                        self.parse_arithmetic_expression(0)
+                    },
                 }
-            } else {
-                let expression = self.parse_arithmetic_expression(0)?;
-                Ok(expression)
-            }
-        } else {
-            let expression = self.parse_arithmetic_expression(0)?;
-            Ok(expression)
+            },
+            TokenKind::IdentifierToken(name) => {
+                if let Some((operator, length)) = self.get_operator(1) {
+                    if let AssignmentOperator(_) = operator {
+                        for _ in 0..length {
+                            self.lexer.advance();
+                        }
+                        let expression = self.parse_assignment_expression()?;
+    
+                        Ok(AbstractSyntaxTree::AssignmentExpression(
+                            Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
+                            operator,
+                            Box::new(expression),
+                        ))
+                    } else {
+                        self.parse_arithmetic_expression(0)
+                    }
+                } else {
+                    self.parse_arithmetic_expression(0)
+                }
+            },
+            _ => {
+                self.parse_arithmetic_expression(0)
+            },
         }
+        // if let TokenKind::IdentifierToken(name) = &identifier_token.kind {
+        //     if let Some((operator, length)) = self.get_operator(1) {
+        //         if let AssignmentOperator(_) = operator {
+        //             for _ in 0..length {
+        //                 self.lexer.advance();
+        //             }
+        //             let expression = self.parse_assignment_expression()?;
+
+        //             Ok(AbstractSyntaxTree::AssignmentExpression(
+        //                 Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
+        //                 operator,
+        //                 Box::new(expression),
+        //             ))
+        //         } else {
+        //             let expression = self.parse_arithmetic_expression(0)?;
+        //             Ok(expression)
+        //         }
+        //     } else {
+        //         let expression = self.parse_arithmetic_expression(0)?;
+        //         Ok(expression)
+        //     }
+        // } else {
+        //     let expression = self.parse_arithmetic_expression(0)?;
+        //     Ok(expression)
+        // }
     }
     fn parse_arithmetic_expression(
         &self,

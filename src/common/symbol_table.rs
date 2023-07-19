@@ -1,28 +1,38 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::common::datatypes::Variable;
-pub struct SymbolTable {
-    pub variables: HashMap<String, Variable>,
+
+
+use std::sync::Mutex;
+
+lazy_static::lazy_static! {
+    static ref SYMBOL_TABLE: Mutex<HashMap<String, Variable>> = Mutex::new(HashMap::new());
 }
 
+pub struct SymbolTable;
+
 impl SymbolTable {
-    pub fn new() -> Self {
-        SymbolTable {
-            variables: HashMap::new(),
-        }
+    pub fn add(name: String, value: Variable) {
+        SYMBOL_TABLE.lock().unwrap().insert(name, value);
     }
 
-    pub fn sharable() -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(SymbolTable::new()))
+    pub fn contains(name: &String) -> bool {
+        SYMBOL_TABLE.lock().unwrap().contains_key(name)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Variable)> {
-        self.variables.iter()
+    pub fn get(name: &String) -> Option<Variable> {
+        SYMBOL_TABLE.lock().unwrap().get(name).cloned()
     }
 
-    pub fn print(&self) {
-        for (name, value) in self.iter() {
-            println!("{}: {}", name, value);
+    pub fn remove(name: &String) {
+        SYMBOL_TABLE.lock().unwrap().remove(name);
+    }
+
+    pub fn print() {
+        let table = SYMBOL_TABLE.lock().unwrap();
+        let iterator = table.iter();
+        for (name, value) in iterator {
+            println!("{}: {}, mutable {} nullable {}", name, value, value.is_mutable(), value.is_nullable());
         }
     }
 }

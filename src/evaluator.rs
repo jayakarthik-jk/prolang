@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
@@ -14,14 +11,12 @@ use crate::semantic_analysis::semantic_tree::SemanticTree;
 
 pub struct Evaluator {
     root: Box<SemanticTree>,
-    symbol_table: Rc<RefCell<SymbolTable>>,
 }
 
 impl Evaluator {
-    pub fn new(root: SemanticTree, symbol_table: Rc<RefCell<SymbolTable>>) -> Self {
+    pub fn new(root: SemanticTree) -> Self {
         Self {
             root: Box::new(root),
-            symbol_table,
         }
     }
 
@@ -51,44 +46,46 @@ impl Evaluator {
                 ArithmeticOperator(operator) => match operator {
                     Addition => Ok(Addition.evaluate_unary(self._evaluate(expression)?)?),
                     Subtraction => Ok(Subtraction.evaluate_unary(self._evaluate(expression)?)?),
-                    operation => Err(CompilerError::INvalidOperatorForUnaryOperation(
+                    operation => Err(CompilerError::InvalidOperatorForUnaryOperation(
                         Operator::ArithmeticOperator(operation.clone()),
                     )),
                 },
                 LogicalOperator(operator) => match operator {
                     Not => Ok(Not.evaluate_unary(self._evaluate(expression)?)?),
-                    operator => Err(CompilerError::INvalidOperatorForUnaryOperation(
+                    operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
                         Operator::LogicalOperator(operator.clone()),
                     )),
                 },
-                operator => Err(CompilerError::INvalidOperatorForUnaryOperation(
+                operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
                     operator.clone(),
                 )),
             },
             SemanticTree::IdentifierExpression(name) => {
-                let symbol_table = self.symbol_table.borrow();
-                match symbol_table.variables.get(name) {
+                match SymbolTable::get(name) {
                     Some(value) => Ok(value.clone()),
                     None => Err(CompilerError::UndefinedVariable(name.clone())),
                 }
             }
             SemanticTree::AssignmentExpression(name, operator, expression) => {
-                let value = self._evaluate(expression)?;
-                let mut symbol_table = self.symbol_table.borrow_mut();
+                let right_hand = self._evaluate(expression)?;
 
                 match operator {
                     Operator::AssignmentOperator(assigmnent) => match assigmnent {
                         Assingment::SimpleAssignment => {
-                            symbol_table
-                                .variables
-                                .insert(name.to_string(), value.clone());
-                            Ok(value)
+                            if SymbolTable::contains(name) && SymbolTable::get(name).unwrap().is_mutable() {
+                                SymbolTable::add(name.to_string(), Variable::new_mutable(right_hand.value.clone()));
+                            } else if SymbolTable::contains(name) {
+                                return Err(CompilerError::ImmutableVariable(name.clone()));
+                            } else {
+                                SymbolTable::add(name.to_string(), right_hand.clone());
+                            }
+                            Ok(right_hand)
                         }
                         assignment_operator => {
-                            if let Some(variable) = symbol_table.variables.get(name) {
+                            if let Some(variable) = SymbolTable::get(name) {
                                 let result = assignment_operator
-                                    .evaluate(variable.clone(), value.clone())?;
-                                symbol_table.variables.insert(name.clone(), result.clone());
+                                    .evaluate(variable.clone(), right_hand.clone())?;
+                                SymbolTable::add(name.clone(), result.clone());
                                 Ok(result)
                             } else {
                                 Err(CompilerError::UndefinedVariable(name.clone()))
