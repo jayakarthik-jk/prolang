@@ -60,12 +60,15 @@ if a is 0 loop {
 ```
 if a < 0 loop until a is 0 {
     print($"a is negative and it is {a}")
+    a += 1
 } 
 else if a is 0 loop until a < 10 {
     print($"a is single digit and it is {a}")
+    a += 1
 } 
 else loop until a < 100 {
     print($"a is double digit and it is {a}")
+    a += 1
 }
 ```
 `note:` you can use $ to interpolate variables in strings
