@@ -14,7 +14,7 @@ pub enum DataType {
 pub struct Variable {
     pub value: DataType,
     mutability: bool,
-    nullability: bool
+    nullability: bool,
 }
 
 impl Variable {
@@ -44,44 +44,73 @@ impl Variable {
         self.nullability = nullability;
     }
     pub fn new(value: DataType) -> Self {
-        Self { value, mutability: false, nullability: false }
+        Self {
+            value,
+            mutability: false,
+            nullability: false,
+        }
     }
     pub fn new_mutable(value: DataType) -> Self {
-        Self { value, mutability: true, nullability: false }
+        Self {
+            value,
+            mutability: true,
+            nullability: false,
+        }
     }
     pub fn new_nullable(value: DataType) -> Self {
-        Self { value, mutability: true, nullability: true }
+        Self {
+            value,
+            mutability: true,
+            nullability: true,
+        }
     }
-
 }
 
 impl From<String> for Variable {
     fn from(value: String) -> Self {
-        Self { value: DataType::String(value), mutability: false, nullability: false }
+        Self {
+            value: DataType::String(value),
+            mutability: false,
+            nullability: false,
+        }
     }
 }
 impl From<i128> for Variable {
     fn from(value: i128) -> Self {
-        Self { value: DataType::Integer(value), mutability: false, nullability: false }
+        Self {
+            value: DataType::Integer(value),
+            mutability: false,
+            nullability: false,
+        }
     }
 }
 impl From<bool> for Variable {
     fn from(value: bool) -> Self {
-        Self { value: DataType::Boolean(value), mutability: false, nullability: false }
+        Self {
+            value: DataType::Boolean(value),
+            mutability: false,
+            nullability: false,
+        }
     }
 }
 impl From<f64> for Variable {
     fn from(value: f64) -> Self {
-        Self { value: DataType::Float(value), mutability: false, nullability: false }
+        Self {
+            value: DataType::Float(value),
+            mutability: false,
+            nullability: false,
+        }
     }
 }
 impl From<DataType> for Variable {
     fn from(value: DataType) -> Self {
-        Self { value, mutability: false, nullability: false }
+        Self {
+            value,
+            mutability: false,
+            nullability: false,
+        }
     }
 }
-
-
 
 impl Display for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

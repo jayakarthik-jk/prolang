@@ -1,18 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use super::token::{Token, TokenKind};
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
-use crate::common::operators::arithmetic::Arithmetic::*;
-use crate::common::operators::assignment::Assingment::*;
-use crate::common::operators::logical::Logical::*;
-use crate::common::operators::relational::Relational::*;
-use crate::common::operators::Operator::*;
 use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::symbols::Symbol::*;
 
-use super::token::{Token, TokenKind};
 pub struct Lexer {
     source: Vec<u8>,
     tokens: Vec<Rc<Token>>,
@@ -45,7 +40,7 @@ impl Lexer {
         }
     }
 
-    fn _next(&mut self) -> char {
+    pub fn _next(&mut self) -> char {
         self.current = if self.position + 1 >= self.source.len() {
             // self.position = self.source.len();
             '\0'
@@ -83,7 +78,7 @@ impl Lexer {
                 self.column = 1;
                 token
             }
-            '\0' => return Err(CompilerError::EndOfSourceCodeError),
+            '\0' => Token::new(TokenKind::EndOfFileToken, self.line, self.column),
             current if current.is_ascii_digit() => {
                 let start = self.position;
                 while self.current.is_ascii_digit() {
@@ -186,123 +181,29 @@ impl Lexer {
                 token
             }
             '+' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(AdditionAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Addition)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Plus), self.line, self.column);
+                self._next();
+                token
             }
             '-' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(SubtractionAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Subtraction)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Minus), self.line, self.column);
+                self._next();
+                token
             }
             '*' => {
-                if self._peek(1) == '*' && self._peek(2) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(ExponentiationAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    self._next();
-                    token
-                } else if self._peek(1) == '*' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Exponentiation)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(MultiplicationAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Multiplication)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Asterisk), self.line, self.column);
+                self._next();
+                token
             }
             '/' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(DivisionAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Division)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Slash), self.line, self.column);
+                self._next();
+                token
             }
             '%' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(ModuloAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(ArithmeticOperator(Modulo)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Percent), self.line, self.column);
+                self._next();
+                token
             }
             '(' => {
                 let token = Token::new(
@@ -323,84 +224,24 @@ impl Lexer {
                 token
             }
             '=' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(Equals)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(AssingmentOperator(SimpleAssignment)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Equals), self.line, self.column);
+                self._next();
+                token
             }
             '<' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(LessThanOrEquals)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(LessThan)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(LessThan), self.line, self.column);
+                self._next();
+                token
             }
             '>' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(GreaterThanOrEquals)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(GreaterThan)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(GreaterThan), self.line, self.column);
+                self._next();
+                token
             }
             '!' => {
-                if self._peek(1) == '=' {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(RelationalOperator(NotEquals)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    self._next();
-                    token
-                } else {
-                    let token = Token::new(
-                        TokenKind::OperatorToken(LogicalOperator(Not)),
-                        self.line,
-                        self.column,
-                    );
-                    self._next();
-                    token
-                }
+                let token = Token::new(TokenKind::SymbolToken(Exclamation), self.line, self.column);
+                self._next();
+                token
             }
 
             _ => {
@@ -437,34 +278,26 @@ impl Lexer {
 
     pub fn lex_with_whitespace(&mut self) -> Result<(), CompilerError> {
         loop {
-            match self.parse_token() {
-                Ok(token) => {
-                    self.tokens.push(Rc::new(token));
-                }
-                Err(error) if CompilerError::EndOfSourceCodeError == error => {
+            let token = self.parse_token()?;
+            match token.kind {
+                TokenKind::EndOfFileToken => {
                     return Ok(());
                 }
-                Err(error) => {
-                    return Err(error);
-                }
+                _ => self.tokens.push(Rc::new(token)),
             }
         }
     }
 
     pub fn lex(&mut self) -> Result<(), CompilerError> {
         loop {
-            match self.parse_token() {
-                Ok(token) => match token.kind {
-                    TokenKind::NewLineToken | TokenKind::WhitespaceToken(_) => {}
-                    _ => {
-                        self.tokens.push(Rc::new(token));
-                    }
-                },
-                Err(error) if CompilerError::EndOfSourceCodeError == error => {
+            let token = self.parse_token()?;
+            match token.kind {
+                TokenKind::NewLineToken | TokenKind::WhitespaceToken(_) => {}
+                TokenKind::EndOfFileToken => {
                     return Ok(());
                 }
-                Err(error) => {
-                    return Err(error);
+                _ => {
+                    self.tokens.push(Rc::new(token));
                 }
             }
         }
@@ -473,7 +306,9 @@ impl Lexer {
     /// returns tokens\[pointer\]
     pub fn advance(&self) {
         let mut index = self.index.borrow_mut();
-        *index += 1;
+        if *index < self.tokens.len() {
+            *index += 1;
+        }
     }
 
     /// returns --pointer
@@ -484,56 +319,56 @@ impl Lexer {
         }
     }
 
-    pub fn peek(&self, offset: usize) -> Result<Rc<Token>, CompilerError> {
+    pub fn peek(&self, offset: usize) -> Rc<Token> {
         let index = *self.index.borrow();
-        match self.tokens.get(index + offset) {
-            Some(token) => Ok(Rc::clone(token)),
-            None => {
-                if self.tokens.is_empty() {
-                    Err(CompilerError::NoTokensAvailable)
-                } else {
-                    Err(CompilerError::EndOfSourceCodeError)
-                }
-            }
+        let token = self.tokens.get(index + offset);
+        if let Some(token) = token {
+            Rc::clone(token)
+        } else {
+            Rc::new(Token::new(
+                TokenKind::EndOfFileToken,
+                self.line,
+                self.column,
+            ))
         }
     }
 
     /// returns tokens\[pointer\]
-    pub fn get_current_token(&self) -> Result<Rc<Token>, CompilerError> {
+    pub fn get_current_token(&self) -> Rc<Token> {
         let index = *self.index.borrow();
-        match self.tokens.get(index) {
-            Some(token) => Ok(Rc::clone(token)),
-            None => {
-                if self.tokens.is_empty() {
-                    Err(CompilerError::NoTokensAvailable)
-                } else {
-                    Err(CompilerError::EndOfSourceCodeError)
-                }
-            }
+        let token = self.tokens.get(index);
+        if let Some(token) = token {
+            Rc::clone(token)
+        } else {
+            Rc::new(Token::new(
+                TokenKind::EndOfFileToken,
+                self.line,
+                self.column,
+            ))
         }
     }
 
     /// returns tokens\[++pointer\]
-    pub fn advance_and_get_current_token(&self) -> Result<Rc<Token>, CompilerError> {
+    pub fn advance_and_get_current_token(&self) -> Rc<Token> {
         self.advance();
         self.get_current_token()
     }
 
     /// returns tokens\[--pointer\]
-    pub fn rewind_and_get_current_token(&self) -> Result<Rc<Token>, CompilerError> {
+    pub fn rewind_and_get_current_token(&self) -> Rc<Token> {
         self.rewind();
         self.get_current_token()
     }
 
     /// returns tokens\[pointer++\]
-    pub fn get_current_token_and_advance(&self) -> Result<Rc<Token>, CompilerError> {
+    pub fn get_current_token_and_advance(&self) -> Rc<Token> {
         let current = self.get_current_token();
         self.advance();
         current
     }
 
     /// returns tokens\[pointer--\]
-    pub fn get_current_token_and_rewind(&self) -> Result<Rc<Token>, CompilerError> {
+    pub fn get_current_token_and_rewind(&self) -> Rc<Token> {
         let current = self.get_current_token();
         self.rewind();
         current

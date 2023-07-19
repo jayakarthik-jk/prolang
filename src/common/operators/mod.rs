@@ -16,7 +16,7 @@ pub mod relational;
 pub enum Operator {
     ArithmeticOperator(Arithmetic),
     RelationalOperator(Relational),
-    AssingmentOperator(Assingment),
+    AssignmentOperator(Assingment),
     LogicalOperator(Logical),
 }
 
@@ -26,7 +26,7 @@ impl Operator {
             Operator::ArithmeticOperator(arithmetic) => arithmetic.evaluate(a, b),
             Operator::RelationalOperator(relational) => Ok(relational.evaluate(a, b)),
             Operator::LogicalOperator(logical) => Ok(logical.evaluate(a, b)),
-            Operator::AssingmentOperator(_) => todo!(),
+            Operator::AssignmentOperator(_) => todo!(),
         }
     }
     pub fn get_binary_precedence(&self) -> u8 {
@@ -40,14 +40,14 @@ impl Operator {
                 Arithmetic::Exponentiation => 8,
             },
             Operator::RelationalOperator(operator) => match operator {
-                Relational::Equals => 4,
-                Relational::NotEquals => 4,
+                Relational::Equality => 4,
+                Relational::InEquality => 4,
                 Relational::LessThan => 5,
                 Relational::LessThanOrEquals => 5,
                 Relational::GreaterThan => 5,
                 Relational::GreaterThanOrEquals => 5,
             },
-            Operator::AssingmentOperator(operator) => match operator {
+            Operator::AssignmentOperator(operator) => match operator {
                 Assingment::SimpleAssignment => 0,
                 Assingment::AdditionAssignment => 0,
                 Assingment::SubtractionAssignment => 0,
@@ -85,7 +85,7 @@ impl Display for Operator {
         match self {
             Operator::ArithmeticOperator(operator) => write!(f, "{}", operator),
             Operator::RelationalOperator(operator) => write!(f, "{}", operator),
-            Operator::AssingmentOperator(operator) => write!(f, "{}", operator),
+            Operator::AssignmentOperator(operator) => write!(f, "{}", operator),
             Operator::LogicalOperator(operator) => write!(f, "{}", operator),
         }
     }

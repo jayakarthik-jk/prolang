@@ -1,11 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::common::datatypes::DataType;
+use crate::common::datatypes::{DataType, Variable};
 use crate::common::errors::CompilerError;
+use crate::common::operators::Operator;
 use crate::common::symbol_table::SymbolTable;
-use crate::lexical_analysis::token::Token;
-use crate::lexical_analysis::token::TokenKind::IdentifierToken;
 use crate::semantic_analysis::semantic_tree::SemanticTree;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
@@ -37,8 +36,8 @@ impl Binder {
         }
         match expression.as_ref() {
             AbstractSyntaxTree::LiteralExpression(token) => self.bind_literal_expression(token),
-            AbstractSyntaxTree::IdentifierExpression(expression) => {
-                self.bind_identifier_expression(expression)
+            AbstractSyntaxTree::IdentifierExpression(name) => {
+                self.bind_identifier_expression(name.to_string())
             }
             AbstractSyntaxTree::UnaryExpression(operator_token, expression) => {
                 self.bind_unary_expression(operator_token, expression)
@@ -57,50 +56,42 @@ impl Binder {
         }
     }
 
-    fn bind_literal_expression(&self, token: &Rc<Token>) -> Result<SemanticTree, CompilerError> {
+    fn bind_literal_expression(&self, variable: &Variable) -> Result<SemanticTree, CompilerError> {
         if self.display_process {
-            println!("binding literal: {}", token);
+            println!("binding literal: {}", variable);
         }
-        Ok(SemanticTree::LiteralExpression(Rc::clone(token)))
+        Ok(SemanticTree::LiteralExpression(variable.clone()))
     }
 
-    fn bind_identifier_expression(
-        &self,
-        identifier_token: &Rc<Token>,
-    ) -> Result<SemanticTree, CompilerError> {
+    fn bind_identifier_expression(&self, name: String) -> Result<SemanticTree, CompilerError> {
         if self.display_process {
-            println!("binding identifier: {}", identifier_token);
+            println!("binding identifier: {}", name);
         }
-        if let IdentifierToken(name) = &identifier_token.kind {
-            let table = self.symbol_table.borrow();
-            let variable = table.variables.get(name);
-            if let Some(variable) = variable {
-                if variable.value != DataType::InternalUndefined {
-                    Ok(SemanticTree::IdentifierExpression(identifier_token.clone()))
-                } else {
-                    Err(CompilerError::UndefinedVariable(name.clone()))
-                }
+
+        let table = self.symbol_table.borrow();
+        let variable = table.variables.get(&name);
+        if let Some(variable) = variable {
+            if variable.value != DataType::InternalUndefined {
+                Ok(SemanticTree::IdentifierExpression(name))
             } else {
-                Err(CompilerError::UndefinedVariable(name.clone()))
+                Err(CompilerError::UndefinedVariable(name))
             }
         } else {
-            Err(CompilerError::InvalidTokenAsIdentifier(
-                identifier_token.kind.clone(),
-            ))
+            Err(CompilerError::UndefinedVariable(name))
         }
     }
     fn bind_unary_expression(
         &self,
-        operator_token: &Rc<Token>,
+        operator: &Operator,
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
         if self.display_process {
-            println!("binding unary: {} {}", operator_token, expression);
+            println!("binding unary: {} {}", operator, expression);
         }
         let expression = self.bind_expression(expression)?;
 
         Ok(SemanticTree::UnaryExpression(
-            Rc::clone(operator_token),
+            operator.clone(),
             Box::new(expression),
         ))
     }
@@ -108,7 +99,7 @@ impl Binder {
     fn bind_binary_expression(
         &self,
         left: &Box<AbstractSyntaxTree>,
-        operator: &Rc<Token>,
+        operator: &Operator,
         right: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
         if self.display_process {
@@ -119,7 +110,7 @@ impl Binder {
 
         Ok(SemanticTree::BinaryExpression(
             Box::new(left),
-            Rc::clone(operator),
+            operator.clone(),
             Box::new(right),
         ))
     }
@@ -127,7 +118,7 @@ impl Binder {
     fn bind_assignment_expression(
         &self,
         identifier_expression: &Box<AbstractSyntaxTree>,
-        operator: &Rc<Token>,
+        operator: &Operator,
         expression: &Box<AbstractSyntaxTree>,
     ) -> Result<SemanticTree, CompilerError> {
         if self.display_process {
@@ -139,20 +130,14 @@ impl Binder {
         let expression = self.bind_expression(expression)?;
 
         match identifier_expression.as_ref() {
-            AbstractSyntaxTree::IdentifierExpression(identifier_token) => {
-                match &identifier_token.as_ref().kind {
-                    IdentifierToken(name) => Ok(SemanticTree::AssignmentExpression(
-                        name.clone(),
-                        Rc::clone(operator),
-                        Box::new(expression),
-                    )),
-                    token => Err(CompilerError::InvalidTokenAsIdentifier(token.clone())),
-                }
+            AbstractSyntaxTree::IdentifierExpression(name) => {
+                Ok(SemanticTree::AssignmentExpression(
+                    name.clone(),
+                    operator.clone(),
+                    Box::new(expression),
+                ))
             }
-            _ => Err(CompilerError::InvalidExpressionAssignment(
-                operator.line,
-                operator.column,
-            )),
+            _ => Err(CompilerError::InvalidExpressionAssignment),
         }
     }
 

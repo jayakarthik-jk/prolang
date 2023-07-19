@@ -4,10 +4,19 @@ use std::fmt::Display;
 pub enum Symbol {
     OpenParanthesis,
     CloseParanthesis,
-    // OpenSquareBracket,
-    // CloseSquareBracket,
-    // OpenCurlyBracket,
-    // CloseCurlyBracket,
+    OpenSquareBracket,
+    CloseSquareBracket,
+    OpenCurlyBracket,
+    CloseCurlyBracket,
+    Plus,
+    Minus,
+    Asterisk,
+    Slash,
+    Percent,
+    Equals,
+    Exclamation,
+    GreaterThan,
+    LessThan,
 }
 
 impl Display for Symbol {
@@ -15,10 +24,19 @@ impl Display for Symbol {
         let text = match self {
             Symbol::OpenParanthesis => "(",
             Symbol::CloseParanthesis => ")",
-            // Symbol::OpenSquareBracket => "[",
-            // Symbol::CloseSquareBracket => "]",
-            // Symbol::OpenCurlyBracket => "{",
-            // Symbol::CloseCurlyBracket => "}",
+            Symbol::Plus => "+",
+            Symbol::Minus => "-",
+            Symbol::Asterisk => "*",
+            Symbol::Slash => "/",
+            Symbol::Percent => "%",
+            Symbol::Equals => "=",
+            Symbol::Exclamation => "!",
+            Symbol::GreaterThan => ">",
+            Symbol::LessThan => "<",
+            Symbol::OpenSquareBracket => "[",
+            Symbol::CloseSquareBracket => "]",
+            Symbol::OpenCurlyBracket => "{",
+            Symbol::CloseCurlyBracket => "}",
         };
         write!(f, "{}", text)
     }

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::{datatypes::Variable, operators::Operator};
+use crate::common::datatypes::Variable;
 
 use super::{keywords::Keyword, symbols::Symbol};
 
@@ -29,11 +29,11 @@ pub enum TokenKind {
     /// number of whitespace
     WhitespaceToken(usize),
     NewLineToken,
-    OperatorToken(Operator),
     KeywordToken(Keyword),
     SymbolToken(Symbol),
     FactoryToken,
     IdentifierToken(String),
+    EndOfFileToken,
 }
 
 impl Display for TokenKind {
@@ -42,11 +42,11 @@ impl Display for TokenKind {
             TokenKind::LiteralToken(a) => write!(f, "{}", a),
             TokenKind::WhitespaceToken(a) => write!(f, "{}", a),
             TokenKind::NewLineToken => write!(f, "NewLineToken"),
-            TokenKind::OperatorToken(a) => write!(f, "{}", a),
             TokenKind::KeywordToken(a) => write!(f, "{}", a),
             TokenKind::SymbolToken(a) => write!(f, "{}", a),
             TokenKind::FactoryToken => write!(f, "FactoryToken"),
             TokenKind::IdentifierToken(a) => write!(f, "{}", a),
+            TokenKind::EndOfFileToken => write!(f, "EndOfFileToken"),
         }
     }
 }

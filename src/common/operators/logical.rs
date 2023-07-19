@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::common::{datatypes::Variable, errors::CompilerError};
 use crate::common::datatypes::DataType::*;
+use crate::common::{datatypes::Variable, errors::CompilerError};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {

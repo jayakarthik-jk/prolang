@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
 use crate::common::datatypes::Variable;
-use crate::common::operators::logical::Logical;
-use crate::common::operators::Operator::LogicalOperator;
+
 use crate::lexical_analysis::token::TokenKind::*;
 
 use super::token::TokenKind;
@@ -11,17 +10,24 @@ use super::token::TokenKind;
 pub enum Keyword {
     True,
     False,
+    And,
+    Or,
+    Not,
+    Xor,
+    Is,
 }
+use self::Keyword::*;
 
 impl Keyword {
     pub fn get_keyword_kind(keyword: &str) -> TokenKind {
         let token = match keyword {
             "true" => LiteralToken(Variable::from(true)),
             "false" => LiteralToken(Variable::from(false)),
-            "and" => OperatorToken(LogicalOperator(Logical::And)),
-            "or" => OperatorToken(LogicalOperator(Logical::Or)),
-            "not" => OperatorToken(LogicalOperator(Logical::Not)),
-            "xor" => OperatorToken(LogicalOperator(Logical::Xor)),
+            "is" => KeywordToken(Is),
+            "and" => KeywordToken(And),
+            "or" => KeywordToken(Or),
+            "not" => KeywordToken(Not),
+            "xor" => KeywordToken(Xor),
             identifier => IdentifierToken(identifier.to_string()),
         };
         token
@@ -33,6 +39,11 @@ impl Display for Keyword {
         let text = match self {
             Keyword::True => "true",
             Keyword::False => "false",
+            Keyword::And => "and",
+            Keyword::Or => "or",
+            Keyword::Not => "not",
+            Keyword::Xor => "xor",
+            Keyword::Is => "is",
         };
         write!(f, "{}", text)
     }

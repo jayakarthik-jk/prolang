@@ -1,12 +1,18 @@
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::common::errors::CompilerError;
+use crate::common::operators::arithmetic::Arithmetic::*;
+use crate::common::operators::assignment::Assingment::*;
+use crate::common::operators::logical::Logical;
+use crate::common::operators::relational::Relational::*;
+use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
+use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::lexer::Lexer;
 use crate::lexical_analysis::symbols::Symbol::*;
-use crate::lexical_analysis::token::{Token, TokenKind};
+use crate::lexical_analysis::token::TokenKind;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
+
 pub struct Parser {
     lexer: Lexer,
     pub diagnostics: RefCell<Vec<CompilerError>>,
@@ -32,23 +38,21 @@ impl Parser {
     }
 
     fn parse_assignment_expression(&self) -> Result<AbstractSyntaxTree, CompilerError> {
-        let identifier_token = self.lexer.get_current_token()?;
-        if let TokenKind::IdentifierToken(_) = &identifier_token.kind {
-            if let Ok(operator_token) = self.lexer.peek(1) {
-                if let TokenKind::OperatorToken(operator) = operator_token.kind {
-                    if let AssingmentOperator(_) = operator {
+        let identifier_token = self.lexer.get_current_token();
+
+        if let TokenKind::IdentifierToken(name) = &identifier_token.kind {
+            if let Some((operator, length)) = self.get_operator(1) {
+                if let AssignmentOperator(_) = operator {
+                    for _ in 0..length {
                         self.lexer.advance();
-                        self.lexer.advance();
-                        let expression = self.parse_assignment_expression()?;
-                        Ok(AbstractSyntaxTree::AssignmentExpression(
-                            Box::new(AbstractSyntaxTree::IdentifierExpression(identifier_token)),
-                            operator_token,
-                            Box::new(expression),
-                        ))
-                    } else {
-                        let expression = self.parse_arithmetic_expression(0)?;
-                        Ok(expression)
                     }
+                    let expression = self.parse_assignment_expression()?;
+
+                    Ok(AbstractSyntaxTree::AssignmentExpression(
+                        Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
+                        operator,
+                        Box::new(expression),
+                    ))
                 } else {
                     let expression = self.parse_arithmetic_expression(0)?;
                     Ok(expression)
@@ -66,16 +70,12 @@ impl Parser {
         &self,
         parent_precedence: u8,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let mut left = if let Ok(operator_token) = self.lexer.get_current_token() {
-            if let TokenKind::OperatorToken(operator) = operator_token.kind {
-                if operator.get_unery_precedence() >= parent_precedence {
-                    self.lexer.advance();
-                    let expression =
-                        self.parse_arithmetic_expression(operator.get_unery_precedence())?;
-                    AbstractSyntaxTree::UnaryExpression(operator_token, Box::new(expression))
-                } else {
-                    self.parse_factor()?
-                }
+        let mut left = if let Some((operator, _)) = self.get_operator(0) {
+            if operator.get_unery_precedence() >= parent_precedence {
+                self.lexer.advance();
+                let expression =
+                    self.parse_arithmetic_expression(operator.get_unery_precedence())?;
+                AbstractSyntaxTree::UnaryExpression(operator, Box::new(expression))
             } else {
                 self.parse_factor()?
             }
@@ -83,86 +83,276 @@ impl Parser {
             self.parse_factor()?
         };
 
-        while let Ok(operator_token) = self.lexer.get_current_token() {
-            if let TokenKind::OperatorToken(operator) = operator_token.kind {
-                let precedence = operator.get_binary_precedence();
-                if precedence <= parent_precedence {
-                    break;
-                }
-                self.lexer.advance();
-                let right = self.parse_arithmetic_expression(precedence)?;
-                left = AbstractSyntaxTree::BinaryExpression(
-                    Box::new(left),
-                    operator_token,
-                    Box::new(right),
-                );
-            } else {
+        while let Some((operator, length)) = self.get_operator(0) {
+            let precedence = operator.get_binary_precedence();
+            if precedence <= parent_precedence {
                 break;
             }
+            for _ in 0..length {
+                self.lexer.advance();
+            }
+            let right = self.parse_arithmetic_expression(precedence)?;
+            left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
         }
+
         Ok(left)
     }
 
-    fn expect(&self, expected: TokenKind, line: usize, column: usize) -> Rc<Token> {
-        match self.lexer.get_current_token_and_advance() {
-            Ok(token) => {
-                if token.kind == expected {
-                    token
-                } else {
-                    let mut diagnostics = self.diagnostics.borrow_mut();
-                    diagnostics.push(CompilerError::UnexpectedTokenWithExpected(
-                        expected,
-                        token.kind.clone(),
-                        line,
-                        column,
-                    ));
-                    self.lexer.generate_factory_token(line, column)
+    fn get_operator(&self, offset: usize) -> Option<(Operator, usize)> {
+        // TODO: use match instead of if let to include keyword operators
+        // like 'and', 'or', 'not', 'xor', 'is', 'in', 'not in', 'is not'
+        let (operator, length) = if let TokenKind::SymbolToken(operator_symbol) =
+            self.lexer.peek(offset).kind
+        {
+            match operator_symbol {
+                Equals => {
+                    // =
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // ==
+                            (RelationalOperator(Equality), 2)
+                        } else {
+                            // =
+                            (AssignmentOperator(SimpleAssignment), 1)
+                        }
+                    } else {
+                        // =
+                        (AssignmentOperator(SimpleAssignment), 1)
+                    }
+                }
+                Plus => {
+                    // +
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // +=
+                            (AssignmentOperator(AdditionAssignment), 2)
+                        } else {
+                            // +
+                            (ArithmeticOperator(Addition), 1)
+                        }
+                    } else {
+                        // +
+                        (ArithmeticOperator(Addition), 1)
+                    }
+                }
+                Minus => {
+                    // -
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // -=
+                            (AssignmentOperator(SubtractionAssignment), 2)
+                        } else {
+                            // -
+                            (ArithmeticOperator(Subtraction), 1)
+                        }
+                    } else {
+                        // -
+                        (ArithmeticOperator(Subtraction), 1)
+                    }
+                }
+                Asterisk => {
+                    // *
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // *=
+                            (AssignmentOperator(MultiplicationAssignment), 2)
+                        } else if second_symbol == Asterisk {
+                            // **
+                            if let TokenKind::SymbolToken(third_token) =
+                                self.lexer.peek(offset + 2).kind
+                            {
+                                if third_token == Equals {
+                                    // **=
+                                    (AssignmentOperator(ExponentiationAssignment), 3)
+                                } else {
+                                    // **
+                                    (ArithmeticOperator(Exponentiation), 2)
+                                }
+                            } else {
+                                // **
+                                (ArithmeticOperator(Exponentiation), 2)
+                            }
+                        } else {
+                            // *
+                            (ArithmeticOperator(Multiplication), 1)
+                        }
+                    } else {
+                        // *
+                        (ArithmeticOperator(Multiplication), 1)
+                    }
+                }
+                Slash => {
+                    // /
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // /=
+                            (AssignmentOperator(DivisionAssignment), 2)
+                        } else {
+                            // /
+                            (ArithmeticOperator(Division), 1)
+                        }
+                    } else {
+                        // /
+                        (ArithmeticOperator(Division), 1)
+                    }
+                }
+                Percent => {
+                    // %
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // %=
+                            (AssignmentOperator(ModuloAssignment), 2)
+                        } else {
+                            // %
+                            (ArithmeticOperator(Modulo), 1)
+                        }
+                    } else {
+                        // %
+                        (ArithmeticOperator(Modulo), 1)
+                    }
+                }
+                Exclamation => {
+                    // !
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // !=
+                            (RelationalOperator(InEquality), 2)
+                        } else {
+                            // !
+                            (LogicalOperator(Logical::Not), 1)
+                        }
+                    } else {
+                        // !
+                        (LogicalOperator(Logical::Not), 1)
+                    }
+                }
+                crate::lexical_analysis::symbols::Symbol::GreaterThan => {
+                    // >
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // >=
+                            (RelationalOperator(GreaterThanOrEquals), 2)
+                        } else {
+                            // >
+                            (
+                                RelationalOperator(
+                                    crate::common::operators::relational::Relational::GreaterThan,
+                                ),
+                                1,
+                            )
+                        }
+                    } else {
+                        // >
+                        (
+                            RelationalOperator(
+                                crate::common::operators::relational::Relational::GreaterThan,
+                            ),
+                            1,
+                        )
+                    }
+                }
+                crate::lexical_analysis::symbols::Symbol::LessThan => {
+                    // <
+                    if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
+                    {
+                        if second_symbol == Equals {
+                            // <=
+                            (RelationalOperator(LessThanOrEquals), 2)
+                        } else {
+                            // <
+                            (
+                                RelationalOperator(
+                                    crate::common::operators::relational::Relational::LessThan,
+                                ),
+                                1,
+                            )
+                        }
+                    } else {
+                        // <
+                        (
+                            RelationalOperator(
+                                crate::common::operators::relational::Relational::LessThan,
+                            ),
+                            1,
+                        )
+                    }
+                }
+                _ => {
+                    return None;
                 }
             }
-            Err(error) => {
-                let mut diagnostics: std::cell::RefMut<'_, Vec<CompilerError>> =
-                    self.diagnostics.borrow_mut();
-                diagnostics.push(error);
-                self.lexer.generate_factory_token(line, column)
+        } else if let TokenKind::KeywordToken(keyword) = &self.lexer.peek(offset).kind {
+            match keyword {
+                Keyword::Is => {
+                    if let TokenKind::KeywordToken(keyword) = &self.lexer.peek(offset + 1).kind {
+                        if Keyword::Not == *keyword {
+                            (RelationalOperator(InEquality), 2)
+                        } else {
+                            (RelationalOperator(Equality), 1)
+                        }
+                    } else {
+                        (RelationalOperator(Equality), 1)
+                    }
+                },
+                Keyword::And => (LogicalOperator(Logical::And), 1),
+                Keyword::Or => (LogicalOperator(Logical::Or), 1),
+                Keyword::Not => (LogicalOperator(Logical::Not), 1),
+                Keyword::Xor => (LogicalOperator(Logical::Xor), 1),
+                _ => {
+                    return None;
+                }
             }
-        }
+        } else {
+            return None;
+        };
+        Some((operator, offset + length))
     }
 
     fn parse_factor(&self) -> Result<AbstractSyntaxTree, CompilerError> {
-        match self.lexer.get_current_token_and_advance() {
-            Ok(token) => match &token.kind {
-                TokenKind::LiteralToken(_) => Ok(AbstractSyntaxTree::LiteralExpression(token)),
-                TokenKind::SymbolToken(symbol) => match symbol {
-                    OpenParanthesis => {
-                        let expression = self.parse_expression()?;
-                        self.expect(
-                            TokenKind::SymbolToken(CloseParanthesis),
-                            token.line,
-                            token.column,
-                        );
+        let token = self.lexer.get_current_token_and_advance();
+        match &token.kind {
+            TokenKind::LiteralToken(variable) => {
+                Ok(AbstractSyntaxTree::LiteralExpression(variable.clone()))
+            }
+            TokenKind::SymbolToken(symbol) => match symbol {
+                OpenParanthesis => {
+                    let expression = self.parse_expression()?;
+                    let next_token = self.lexer.get_current_token_and_advance();
+                    if next_token.kind == TokenKind::SymbolToken(CloseParanthesis) {
                         Ok(AbstractSyntaxTree::ParenthesizedExpression(Box::new(
                             expression,
                         )))
-                    }
-                    CloseParanthesis => {
-                        println!("line: {} column: {}", token.line, token.column);
+                    } else {
                         Err(CompilerError::UnexpectedToken(
                             TokenKind::SymbolToken(CloseParanthesis),
                             token.line,
                             token.column,
                         ))
                     }
-                },
-                TokenKind::IdentifierToken(_) => {
-                    Ok(AbstractSyntaxTree::IdentifierExpression(token))
                 }
-                kind => Err(CompilerError::UnexpectedToken(
-                    kind.clone(),
+                CloseParanthesis => Err(CompilerError::UnexpectedToken(
+                    TokenKind::SymbolToken(CloseParanthesis),
                     token.line,
                     token.column,
                 )),
+                _ => todo!("parse_factor"),
             },
-            Err(error) => Err(error),
+            TokenKind::IdentifierToken(name) => {
+                Ok(AbstractSyntaxTree::IdentifierExpression(name.clone()))
+            }
+            kind => Err(CompilerError::UnexpectedToken(
+                kind.clone(),
+                token.line,
+                token.column,
+            )),
         }
     }
 }

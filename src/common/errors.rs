@@ -9,7 +9,6 @@ use super::datatypes::Variable;
 
 #[derive(Debug, PartialEq)]
 pub enum CompilerError {
-    EndOfSourceCodeError,
     NoTokensAvailable,
 
     // Lexical Errors
@@ -19,7 +18,9 @@ pub enum CompilerError {
     InvalidKeyword,
 
     // Syntax Errors
+    /// token, line, column
     UnexpectedToken(TokenKind, usize, usize),
+    /// token, expected, line, column
     UnexpectedTokenWithExpected(TokenKind, TokenKind, usize, usize),
 
     // Evaluation Errors
@@ -33,7 +34,7 @@ pub enum CompilerError {
     // Semantic Errors
     UndefinedVariable(String),
     InvalidTokenAsIdentifier(TokenKind),
-    InvalidExpressionAssignment(usize, usize),
+    InvalidExpressionAssignment,
     InvalidAssignment,
     InvalidStringParsing(Variable),
     InvalidUneryOperation,
@@ -46,7 +47,6 @@ pub enum CompilerError {
 impl Display for CompilerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            CompilerError::EndOfSourceCodeError => "Incomplete Expression".to_string(),
             CompilerError::NoTokensAvailable => "No tokens available".to_string(),
             CompilerError::InvalidCharacter(character, line, column) => format!(
                 "Invalid character '{}' at line {}, column {}",
@@ -89,10 +89,9 @@ impl Display for CompilerError {
             CompilerError::InvalidTokenAsIdentifier(token) => {
                 format!("Invalid token '{}' as identifier", token)
             }
-            CompilerError::InvalidExpressionAssignment(line, column) => format!(
-                "Invalid expression assignment at line {}, column {}",
-                line, column
-            ),
+            CompilerError::InvalidExpressionAssignment => {
+                "Invalid expression assignment".to_string()
+            }
             CompilerError::InvalidAssignment => "Invalid assignment".to_string(),
             CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
             CompilerError::InvalidStringParsing(a) => {

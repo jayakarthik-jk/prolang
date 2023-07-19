@@ -1,11 +1,11 @@
-use std::fmt::Display;
-use crate::common::datatypes::Variable;
 use crate::common::datatypes::DataType::*;
+use crate::common::datatypes::Variable;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Relational {
-    Equals,
-    NotEquals,
+    Equality,
+    InEquality,
     LessThan,
     LessThanOrEquals,
     GreaterThan,
@@ -15,8 +15,8 @@ pub enum Relational {
 impl Display for Relational {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            Relational::Equals => "==",
-            Relational::NotEquals => "!=",
+            Relational::Equality => "==",
+            Relational::InEquality => "!=",
             Relational::LessThan => "<",
             Relational::LessThanOrEquals => "<=",
             Relational::GreaterThan => ">",
@@ -29,7 +29,7 @@ impl Display for Relational {
 impl Relational {
     pub fn evaluate(&self, a: Variable, b: Variable) -> Variable {
         let result = match self {
-            Relational::Equals => match (a.value, b.value) {
+            Relational::Equality => match (a.value, b.value) {
                 (String(a), String(b)) => Boolean(a == b),
                 (Float(a), Float(b)) => Boolean(a == b),
                 (Integer(a), Integer(b)) => Boolean(a == b),
@@ -37,7 +37,7 @@ impl Relational {
                 (Infinity, Infinity) => Boolean(true),
                 _ => Boolean(false),
             },
-            Relational::NotEquals => match (a.value, b.value) {
+            Relational::InEquality => match (a.value, b.value) {
                 (String(a), String(b)) => Boolean(a != b),
                 (Float(a), Float(b)) => Boolean(a != b),
                 (Integer(a), Integer(b)) => Boolean(a != b),

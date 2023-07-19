@@ -1,12 +1,11 @@
-use crate::lexical_analysis::token::Token;
-use std::rc::Rc;
+use crate::common::{datatypes::Variable, operators::Operator};
 
 pub enum SemanticTree {
-    LiteralExpression(Rc<Token>),
-    IdentifierExpression(Rc<Token>),
-    UnaryExpression(Rc<Token>, Box<SemanticTree>),
-    BinaryExpression(Box<SemanticTree>, Rc<Token>, Box<SemanticTree>),
-    AssignmentExpression(String, Rc<Token>, Box<SemanticTree>),
+    LiteralExpression(Variable),
+    IdentifierExpression(String),
+    UnaryExpression(Operator, Box<SemanticTree>),
+    BinaryExpression(Box<SemanticTree>, Operator, Box<SemanticTree>),
+    AssignmentExpression(String, Operator, Box<SemanticTree>),
 }
 
 impl SemanticTree {
