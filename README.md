@@ -41,7 +41,7 @@ loop {
 ```
 mutable a = 10
 
-loop until a is 0 {
+loop until a >= 0 {
     print(a)
     a -= 1
 }
