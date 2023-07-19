@@ -9,8 +9,8 @@ fn get_lexer(source: String) -> crate::lexical_analysis::lexer::Lexer {
 }
 #[test]
 fn arithmetic_expressions() {
-    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::common::datatypes::Variable;
+    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::lexical_analysis::token::TokenKind::*;
 
     let source = "1 + 2 * 3 - 4 / 5 ** 6".to_string();
@@ -68,8 +68,8 @@ fn arithmetic_expressions() {
 
 #[test]
 fn paranthesized_arithmetic_expression() {
-    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::common::datatypes::Variable;
+    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::lexical_analysis::symbols::Symbol::{CloseParanthesis, OpenParanthesis};
     use crate::lexical_analysis::token::TokenKind::*;
     let source = "(1 + 2) * 3 - 4 / 5".to_string();
@@ -124,8 +124,8 @@ fn paranthesized_arithmetic_expression() {
 // test for relational operators
 #[test]
 fn relational_expression() {
-    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::common::datatypes::Variable;
+    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::lexical_analysis::token::TokenKind::*;
     let source = "1 < 2 <= 3 > 4 >= 5 == 6 != 7".to_string();
     let lexer = get_lexer(source);
@@ -203,8 +203,8 @@ fn relational_expression() {
 // test for logical operators
 #[test]
 fn logical_expression() {
-    use crate::lexical_analysis::keywords::Keyword::*;
     use crate::common::datatypes::Variable;
+    use crate::lexical_analysis::keywords::Keyword::*;
     use crate::lexical_analysis::token::TokenKind::*;
     let source = "1 and 2 or 3 xor 4 not 5".to_string();
     let lexer = get_lexer(source);
@@ -221,10 +221,7 @@ fn logical_expression() {
         lexer.get_current_token_and_advance().kind,
         LiteralToken(Variable::from(2))
     );
-    assert_eq!(
-        lexer.get_current_token_and_advance().kind,
-        KeywordToken(Or)
-    );
+    assert_eq!(lexer.get_current_token_and_advance().kind, KeywordToken(Or));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
         LiteralToken(Variable::from(3))
@@ -251,8 +248,8 @@ fn logical_expression() {
 #[test]
 fn assignment_expression() {
     use crate::common::datatypes::Variable;
-    use crate::lexical_analysis::token::TokenKind::*;
     use crate::lexical_analysis::symbols::Symbol::*;
+    use crate::lexical_analysis::token::TokenKind::*;
 
     let source = "1 = 2 += 3 -= 4 *= 5 /= 6 %= 7 **= 8".to_string();
     let lexer = get_lexer(source);
@@ -350,10 +347,10 @@ fn assignment_expression() {
 // test for unary operators
 #[test]
 fn all_expressions() {
-    use crate::lexical_analysis::symbols::Symbol::*;
     use crate::common::datatypes::Variable;
-    use crate::lexical_analysis::token::TokenKind::*;
     use crate::lexical_analysis::keywords::Keyword::*;
+    use crate::lexical_analysis::symbols::Symbol::*;
+    use crate::lexical_analysis::token::TokenKind::*;
     let source = "1 + 2 - 3 * 4 / 5 % 6 ** 7 < 8 <= 9 > 10 >= 11 == 12 != 13 and 14 or 15 xor 16 not 17 = 18 += 19 -= 20 *= 21 /= 22 %= 23 **= 24".to_string();
     let lexer = get_lexer(source);
 
@@ -485,10 +482,7 @@ fn all_expressions() {
         lexer.get_current_token_and_advance().kind,
         LiteralToken(Variable::from(14))
     );
-    assert_eq!(
-        lexer.get_current_token_and_advance().kind,
-        KeywordToken(Or)
-    );
+    assert_eq!(lexer.get_current_token_and_advance().kind, KeywordToken(Or));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
         LiteralToken(Variable::from(15))
@@ -633,8 +627,8 @@ fn test_invalid_identifiers() {
 #[test]
 fn test_keywords() {
     use crate::common::datatypes::Variable;
-    use crate::lexical_analysis::token::TokenKind::*;
     use crate::lexical_analysis::keywords::Keyword::*;
+    use crate::lexical_analysis::token::TokenKind::*;
 
     let source = "and or xor not true false".to_string();
     let lexer = get_lexer(source);
@@ -642,10 +636,7 @@ fn test_keywords() {
         lexer.get_current_token_and_advance().kind,
         KeywordToken(And)
     );
-    assert_eq!(
-        lexer.get_current_token_and_advance().kind,
-        KeywordToken(Or)
-    );
+    assert_eq!(lexer.get_current_token_and_advance().kind, KeywordToken(Or));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
         KeywordToken(Xor)

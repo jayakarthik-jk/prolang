@@ -5,7 +5,6 @@ lazy_static::lazy_static! {
     static ref DIAGNOSTICS_VECTOR: Mutex<Vec<CompilerError>> = Mutex::new(Vec::new());
 }
 
-
 // Define the Diagnostics struct
 pub struct Diagnostics;
 
@@ -14,7 +13,6 @@ impl Diagnostics {
     pub fn add_error(error: CompilerError) {
         DIAGNOSTICS_VECTOR.lock().unwrap().push(error);
     }
-
 
     // Function to read all errors in the vector
     pub fn read_errors() -> Vec<CompilerError> {

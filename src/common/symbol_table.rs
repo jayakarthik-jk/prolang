@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::common::datatypes::Variable;
 
-
 use std::sync::Mutex;
 
 lazy_static::lazy_static! {
@@ -32,7 +31,13 @@ impl SymbolTable {
         let table = SYMBOL_TABLE.lock().unwrap();
         let iterator = table.iter();
         for (name, value) in iterator {
-            println!("{}: {}, mutable {} nullable {}", name, value, value.is_mutable(), value.is_nullable());
+            println!(
+                "{}: {}, mutable {} nullable {}",
+                name,
+                value,
+                value.is_mutable(),
+                value.is_nullable()
+            );
         }
     }
 }

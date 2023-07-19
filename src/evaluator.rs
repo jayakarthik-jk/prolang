@@ -60,20 +60,23 @@ impl Evaluator {
                     operator.clone(),
                 )),
             },
-            SemanticTree::IdentifierExpression(name) => {
-                match SymbolTable::get(name) {
-                    Some(value) => Ok(value.clone()),
-                    None => Err(CompilerError::UndefinedVariable(name.clone())),
-                }
-            }
+            SemanticTree::IdentifierExpression(name) => match SymbolTable::get(name) {
+                Some(value) => Ok(value.clone()),
+                None => Err(CompilerError::UndefinedVariable(name.clone())),
+            },
             SemanticTree::AssignmentExpression(name, operator, expression) => {
                 let right_hand = self._evaluate(expression)?;
 
                 match operator {
                     Operator::AssignmentOperator(assigmnent) => match assigmnent {
                         Assingment::SimpleAssignment => {
-                            if SymbolTable::contains(name) && SymbolTable::get(name).unwrap().is_mutable() {
-                                SymbolTable::add(name.to_string(), Variable::new_mutable(right_hand.value.clone()));
+                            if SymbolTable::contains(name)
+                                && SymbolTable::get(name).unwrap().is_mutable()
+                            {
+                                SymbolTable::add(
+                                    name.to_string(),
+                                    Variable::new_mutable(right_hand.value.clone()),
+                                );
                             } else if SymbolTable::contains(name) {
                                 return Err(CompilerError::ImmutableVariable(name.clone()));
                             } else {
@@ -82,10 +85,14 @@ impl Evaluator {
                             Ok(right_hand)
                         }
                         assignment_operator => {
+                            // TODO: check if it is correct
                             if let Some(variable) = SymbolTable::get(name) {
                                 let result = assignment_operator
                                     .evaluate(variable.clone(), right_hand.clone())?;
-                                SymbolTable::add(name.clone(), result.clone());
+                                SymbolTable::add(
+                                    name.clone(),
+                                    Variable::new_mutable(result.value.clone()),
+                                );
                                 Ok(result)
                             } else {
                                 Err(CompilerError::UndefinedVariable(name.clone()))

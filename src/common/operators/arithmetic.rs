@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use crate::common::{
     datatypes::{DataType::*, Variable},
@@ -83,23 +83,23 @@ impl Arithmetic {
 
     fn add(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
         let result = match (variable1.value, variable2.value) {
-            (String(a), String(b)) => Variable::from(a + &b),
-            (String(a), Float(b)) => Variable::from(a + &b.to_string()),
-            (String(a), Integer(b)) => Variable::from(a + &b.to_string()),
-            (String(a), Boolean(b)) => Variable::from(a + &b.to_string()),
-            (String(a), Infinity) => Variable::from(a + "infinity"),
+            (String(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Float(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Integer(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Boolean(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Infinity) => Variable::from(Arc::new(format!("{a}infinity"))),
 
-            (Float(a), String(b)) => Variable::from(a.to_string() + &b),
+            (Float(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
             (Float(a), Float(b)) => Variable::from(a + b),
             (Float(a), Integer(b)) => Variable::from(a + b as f64),
             (Float(a), Boolean(b)) => Variable::from(if b { a + 1.0 } else { a }),
 
-            (Integer(a), String(b)) => Variable::from(a.to_string() + &b),
+            (Integer(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
             (Integer(a), Float(b)) => Variable::from(a as f64 + b),
             (Integer(a), Integer(b)) => Variable::from(a + b),
             (Integer(a), Boolean(b)) => Variable::from(if b { a + 1 } else { a }),
 
-            (Boolean(a), String(b)) => Variable::from(a.to_string() + &b),
+            (Boolean(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
             (Boolean(a), Float(b)) => Variable::from(if a { b + 1.0 } else { b }),
             (Boolean(a), Integer(b)) => Variable::from(if a { b + 1 } else { b }),
             (Boolean(a), Boolean(b)) => Variable::from(match (a, b) {
@@ -107,15 +107,13 @@ impl Arithmetic {
                 (false, false) => 0,
                 _ => 1,
             }),
-            (Infinity, String(a)) => Variable::from("infinity".to_string() + &a),
+            (Infinity, String(a)) => Variable::from(Arc::new(format!("infinity{a}"))),
             (_, Infinity) => Variable::from(Infinity),
             (Infinity, _) => Variable::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -149,9 +147,7 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -170,22 +166,22 @@ impl Arithmetic {
                 for _ in 0..b as i128 {
                     result += &a;
                 }
-                Variable::from(result)
+                Variable::from(Arc::new(result))
             }
             (String(a), Integer(b)) => {
                 let mut result = "".to_string();
                 for _ in 0..b {
                     result += &a;
                 }
-                Variable::from(result)
+                Variable::from(Arc::new(result))
             }
-            (String(a), Boolean(b)) => Variable::from(if b { a } else { "".to_string() }),
+            (String(a), Boolean(b)) => Variable::from(if b { a } else { Arc::new("".to_string()) }),
             (Float(a), String(b)) => {
                 let mut result = "".to_string();
                 for _ in 0..a as i128 {
                     result += &b;
                 }
-                Variable::from(result)
+                Variable::from(Arc::new(result))
             }
             (Float(a), Float(b)) => Variable::from(a * b),
             (Float(a), Integer(b)) => Variable::from(a * b as f64),
@@ -195,13 +191,13 @@ impl Arithmetic {
                 for _ in 0..a {
                     result += &b;
                 }
-                Variable::from(result)
+                Variable::from(Arc::new(result))
             }
             (Integer(a), Float(b)) => Variable::from(a as f64 * b),
             (Integer(a), Integer(b)) => Variable::from(a * b),
 
             (Integer(a), Boolean(b)) => Variable::from(if b { a } else { 0 }),
-            (Boolean(a), String(b)) => Variable::from(if a { b } else { "".to_string() }),
+            (Boolean(a), String(b)) => Variable::from(if a { b } else { Arc::new("".to_string()) }),
             (Boolean(a), Float(b)) => Variable::from(if a { b } else { 0.0 }),
             (Boolean(a), Integer(b)) => Variable::from(if a { b } else { 0 }),
             (Boolean(a), Boolean(b)) => Variable::from(if a == b {
@@ -225,9 +221,7 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -354,9 +348,7 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -482,9 +474,7 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -588,9 +578,7 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => {
-                return Err(CompilerError::OperationOnNull)
-            }
+            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }

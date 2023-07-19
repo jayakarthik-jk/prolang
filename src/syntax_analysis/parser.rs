@@ -1,4 +1,4 @@
-use crate::common::datatypes::{Variable, DataType};
+use crate::common::datatypes::{DataType, Variable};
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment::*;
@@ -19,9 +19,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
-        Self {
-            lexer,
-        }
+        Self { lexer }
     }
 
     pub fn parse(&mut self) -> Result<AbstractSyntaxTree, CompilerError> {
@@ -41,35 +39,72 @@ impl Parser {
             TokenKind::KeywordToken(keyword) => {
                 match keyword {
                     Keyword::Mutable => {
-                        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
+                        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind
+                        {
                             if let Some((operator, length)) = self.get_operator(2) {
-                                if let AssignmentOperator(SimpleAssignment) = operator {
-                                    for _ in 0..length {
-                                        self.lexer.advance();
+                                for _ in 0..length {
+                                    self.lexer.advance();
+                                }
+                                let expression = self.parse_assignment_expression()?;
+
+                                match operator {
+                                    AssignmentOperator(SimpleAssignment) => {
+                                        if SymbolTable::contains(variable_name) {
+                                            SymbolTable::add(
+                                                variable_name.to_string(),
+                                                Variable::new_mutable(
+                                                    SymbolTable::get(variable_name).unwrap().value,
+                                                ),
+                                            );
+                                        } else {
+                                            SymbolTable::add(
+                                                variable_name.to_string(),
+                                                Variable::new_mutable(DataType::Null),
+                                            );
+                                        }
+
+                                        Ok(AbstractSyntaxTree::AssignmentExpression(
+                                            Box::new(AbstractSyntaxTree::IdentifierExpression(
+                                                variable_name.to_string(),
+                                            )),
+                                            operator,
+                                            Box::new(expression),
+                                        ))
                                     }
-                                    let expression = self.parse_assignment_expression()?;
-                                    if SymbolTable::contains(variable_name) {
-                                        SymbolTable::add(variable_name.to_string(), Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value));
-                                    } else {
-                                        SymbolTable::add(variable_name.to_string(), Variable::new_mutable(DataType::Null));
+                                    AssignmentOperator(_) => {
+                                        if SymbolTable::contains(variable_name) {
+                                            SymbolTable::add(
+                                                variable_name.to_string(),
+                                                Variable::new_mutable(
+                                                    SymbolTable::get(variable_name).unwrap().value,
+                                                ),
+                                            );
+                                        } else {
+                                            return Err(CompilerError::UndefinedVariable(
+                                                variable_name.to_string(),
+                                            ));
+                                        }
+                                        Ok(AbstractSyntaxTree::AssignmentExpression(
+                                            Box::new(AbstractSyntaxTree::IdentifierExpression(
+                                                variable_name.to_string(),
+                                            )),
+                                            operator,
+                                            Box::new(expression),
+                                        ))
                                     }
-                                    
-                                    Ok(AbstractSyntaxTree::AssignmentExpression(
-                                        Box::new(AbstractSyntaxTree::IdentifierExpression(variable_name.to_string())),
-                                        operator,
-                                        Box::new(expression),
-                                    ))
-                                } else {
-                                    // Error because mutable with compound assignment
-                                    Err(CompilerError::InvalidUseOfMutableKeyword)
+                                    _ => Err(CompilerError::InvalidOperationAsAssignmentOperation),
                                 }
                             } else {
                                 // Error because mutable without assignment
                                 if SymbolTable::contains(variable_name) {
                                     self.lexer.advance();
-                                    self.lexer.advance();    
-                                    SymbolTable::add(variable_name.to_string(), Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value));
-                                    Ok(AbstractSyntaxTree::IdentifierExpression(variable_name.to_string()))
+                                    self.lexer.advance();
+                                    let variable =
+                                        SymbolTable::get(variable_name).unwrap().as_mutable();
+                                    SymbolTable::add(variable_name.to_string(), variable);
+                                    Ok(AbstractSyntaxTree::IdentifierExpression(
+                                        variable_name.to_string(),
+                                    ))
                                 } else {
                                     Err(CompilerError::NullInitializationOfNonNullableVariable)
                                 }
@@ -77,12 +112,65 @@ impl Parser {
                         } else {
                             Err(CompilerError::InvalidUseOfMutableKeyword)
                         }
-                    },
-                    _ => {
-                        self.parse_arithmetic_expression(0)
-                    },
+                    }
+                    Keyword::Nullable => {
+                        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind
+                        {
+                            if let Some((operator, length)) = self.get_operator(2) {
+                                for _ in 0..length {
+                                    self.lexer.advance();
+                                }
+                                let expression = self.parse_assignment_expression()?;
+
+                                match operator {
+                                    AssignmentOperator(SimpleAssignment) => {
+                                        if SymbolTable::contains(variable_name) {
+                                            let variable = SymbolTable::get(variable_name)
+                                                .unwrap()
+                                                .as_nullable();
+                                            SymbolTable::add(variable_name.to_string(), variable);
+                                        } else {
+                                            SymbolTable::add(
+                                                variable_name.to_string(),
+                                                Variable::new_nullable(DataType::Null),
+                                            );
+                                        }
+
+                                        Ok(AbstractSyntaxTree::AssignmentExpression(
+                                            Box::new(AbstractSyntaxTree::IdentifierExpression(
+                                                variable_name.to_string(),
+                                            )),
+                                            operator,
+                                            Box::new(expression),
+                                        ))
+                                    }
+                                    _ => Err(CompilerError::OperationOnNull),
+                                }
+                            } else {
+                                // nullable without assignment
+                                self.lexer.advance();
+                                self.lexer.advance();
+                                if SymbolTable::contains(variable_name) {
+                                    let variable =
+                                        SymbolTable::get(variable_name).unwrap().as_nullable();
+                                    SymbolTable::add(variable_name.to_string(), variable);
+                                } else {
+                                    SymbolTable::add(
+                                        variable_name.to_string(),
+                                        Variable::from(DataType::Null),
+                                    );
+                                }
+                                Ok(AbstractSyntaxTree::IdentifierExpression(
+                                    variable_name.to_string(),
+                                ))
+                            }
+                        } else {
+                            Err(CompilerError::InvalidUseOfNullableKeyword)
+                        }
+                    }
+                    _ => self.parse_arithmetic_expression(0),
                 }
-            },
+            }
             TokenKind::IdentifierToken(name) => {
                 if let Some((operator, length)) = self.get_operator(1) {
                     if let AssignmentOperator(_) = operator {
@@ -90,7 +178,7 @@ impl Parser {
                             self.lexer.advance();
                         }
                         let expression = self.parse_assignment_expression()?;
-    
+
                         Ok(AbstractSyntaxTree::AssignmentExpression(
                             Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
                             operator,
@@ -102,36 +190,9 @@ impl Parser {
                 } else {
                     self.parse_arithmetic_expression(0)
                 }
-            },
-            _ => {
-                self.parse_arithmetic_expression(0)
-            },
+            }
+            _ => self.parse_arithmetic_expression(0),
         }
-        // if let TokenKind::IdentifierToken(name) = &identifier_token.kind {
-        //     if let Some((operator, length)) = self.get_operator(1) {
-        //         if let AssignmentOperator(_) = operator {
-        //             for _ in 0..length {
-        //                 self.lexer.advance();
-        //             }
-        //             let expression = self.parse_assignment_expression()?;
-
-        //             Ok(AbstractSyntaxTree::AssignmentExpression(
-        //                 Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
-        //                 operator,
-        //                 Box::new(expression),
-        //             ))
-        //         } else {
-        //             let expression = self.parse_arithmetic_expression(0)?;
-        //             Ok(expression)
-        //         }
-        //     } else {
-        //         let expression = self.parse_arithmetic_expression(0)?;
-        //         Ok(expression)
-        //     }
-        // } else {
-        //     let expression = self.parse_arithmetic_expression(0)?;
-        //     Ok(expression)
-        // }
     }
     fn parse_arithmetic_expression(
         &self,
@@ -368,7 +429,7 @@ impl Parser {
                     } else {
                         (RelationalOperator(Equality), 1)
                     }
-                },
+                }
                 Keyword::And => (LogicalOperator(Logical::And), 1),
                 Keyword::Or => (LogicalOperator(Logical::Or), 1),
                 Keyword::Not => (LogicalOperator(Logical::Not), 1),
