@@ -36,17 +36,11 @@ impl Parser {
     fn parse_assignment_expression(&self) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
         match &identifier_token.kind {
-            TokenKind::KeywordToken(keyword) => {
-                match keyword {
-                    Keyword::Mutable => {
-                        self.handle_mutable_keyword()
-                    }
-                    Keyword::Nullable => {
-                        self.handle_nullable_keyword()
-                    }
-                    _ => self.parse_arithmetic_expression(0),
-                }
-            }
+            TokenKind::KeywordToken(keyword) => match keyword {
+                Keyword::Mutable => self.handle_mutable_keyword(),
+                Keyword::Nullable => self.handle_nullable_keyword(),
+                _ => self.parse_arithmetic_expression(0),
+            },
             TokenKind::IdentifierToken(name) => {
                 if let Some((operator, length)) = self.get_operator(1) {
                     if let AssignmentOperator(_) = operator {
@@ -72,10 +66,9 @@ impl Parser {
     }
 
     fn handle_nullable_keyword(&self) -> Result<AbstractSyntaxTree, CompilerError> {
-        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind
-        {
+        if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
             if let Some((operator, length)) = self.get_operator(2) {
-                // nullable assignment
+                // nullable variable_name operator expression
                 for _ in 0..length {
                     self.lexer.advance();
                 }
@@ -83,12 +76,13 @@ impl Parser {
 
                 handle_nullable_assignment(variable_name, operator, expression)
             } else {
-                // nullable declaration
+                // nullable variable_name
                 self.lexer.advance();
                 self.lexer.advance();
                 handle_nullable_declaration(variable_name)
             }
         } else {
+            // nullable
             Err(CompilerError::InvalidUseOfNullableKeyword)
         }
     }
@@ -96,24 +90,18 @@ impl Parser {
     fn handle_mutable_keyword(&self) -> Result<AbstractSyntaxTree, CompilerError> {
         if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
             if let Some((operator, length)) = self.get_operator(2) {
+                // `mutable` variable_name operator expression
                 for _ in 0..length {
                     self.lexer.advance();
                 }
                 let expression = self.parse_assignment_expression()?;
-
                 handle_mutable_assignment(variable_name, operator, expression)
             } else {
+                // `mutable` variable_name
                 if SymbolTable::contains(variable_name) {
-                    self.lexer.advance();
-                    self.lexer.advance();
-                    let variable =
-                        SymbolTable::get(variable_name).unwrap().as_mutable();
-                    SymbolTable::add(variable_name.to_string(), variable);
-                    Ok(AbstractSyntaxTree::IdentifierExpression(
-                        variable_name.to_string(),
-                    ))
+                    return Err(CompilerError::CannotConvertFromImmutableToMutable);
                 } else {
-                    Err(CompilerError::NullInitializationOfNonNullableVariable)
+                    Err(CompilerError::NullAssignmentOfNonNullableVariable)
                 }
             }
         } else {
@@ -412,18 +400,32 @@ impl Parser {
     }
 }
 
-
-fn handle_mutable_assignment(variable_name: &String, operator: Operator, expression: AbstractSyntaxTree) -> Result<AbstractSyntaxTree, CompilerError> {
+fn handle_mutable_assignment(
+    variable_name: &String,
+    operator: Operator,
+    expression: AbstractSyntaxTree,
+) -> Result<AbstractSyntaxTree, CompilerError> {
     match operator {
         AssignmentOperator(SimpleAssignment) => {
             if SymbolTable::contains(variable_name) {
-                SymbolTable::add(
-                    variable_name.to_string(),
-                    Variable::new_mutable(
-                        SymbolTable::get(variable_name).unwrap().value,
-                    ),
-                );
+                let old_variable = SymbolTable::get(variable_name).unwrap();
+                if old_variable.is_mutable() {
+                    // `mutable` variable_name = old_expression
+                    // `mutable` variable_name = new_expression
+                    // TODO: add diagnostics. saying
+                    // you don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever
+                    // TODO: use Internal undefined instead of null
+                    SymbolTable::add(
+                        variable_name.to_string(),
+                        Variable::new_mutable(DataType::Null),
+                    );
+                } else {
+                    // variable_name = old_expression
+                    // `mutable` variable_name = new_expression
+                    return Err(CompilerError::CannotConvertFromImmutableToMutable);
+                }
             } else {
+                // `mutable` variable_name = expression
                 SymbolTable::add(
                     variable_name.to_string(),
                     Variable::new_mutable(DataType::Null),
@@ -438,18 +440,31 @@ fn handle_mutable_assignment(variable_name: &String, operator: Operator, express
                 Box::new(expression),
             ))
         }
+        // mutable a += 10
         AssignmentOperator(_) => {
             if SymbolTable::contains(variable_name) {
+                let old_variable = SymbolTable::get(variable_name).unwrap();
+                if old_variable.is_mutable() {
+                    // `mutable` variable_name operator old_expression
+                    // `mutable` variable_name assignment_operator new expression
+                    // TODO: add diagnostics. saying
+                    // you don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever
+                    // TODO: use Internal undefined instead of null
+                    SymbolTable::add(
+                        variable_name.to_string(),
+                        Variable::new_mutable(DataType::Null),
+                    );
+                } else {
+                    // variable_name operator expression
+                    // `mutable` variable_name assignment_operator new expression
+                    return Err(CompilerError::CannotConvertFromImmutableToMutable);
+                }
                 SymbolTable::add(
                     variable_name.to_string(),
-                    Variable::new_mutable(
-                        SymbolTable::get(variable_name).unwrap().value,
-                    ),
+                    Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value),
                 );
             } else {
-                return Err(CompilerError::UndefinedVariable(
-                    variable_name.to_string(),
-                ));
+                return Err(CompilerError::UndefinedVariable(variable_name.to_string()));
             }
             Ok(AbstractSyntaxTree::AssignmentExpression(
                 Box::new(AbstractSyntaxTree::IdentifierExpression(
@@ -463,15 +478,16 @@ fn handle_mutable_assignment(variable_name: &String, operator: Operator, express
     }
 }
 
-fn handle_nullable_declaration(variable_name: &String) -> Result<AbstractSyntaxTree, CompilerError> {
+fn handle_nullable_declaration(
+    variable_name: &String,
+) -> Result<AbstractSyntaxTree, CompilerError> {
     if SymbolTable::contains(variable_name) {
-        let variable =
-            SymbolTable::get(variable_name).unwrap().as_nullable();
+        let variable = SymbolTable::get(variable_name).unwrap().as_nullable();
         SymbolTable::add(variable_name.to_string(), variable);
     } else {
         SymbolTable::add(
             variable_name.to_string(),
-            Variable::new_nullable(DataType::Null)
+            Variable::new_nullable(DataType::Null),
         );
     }
     Ok(AbstractSyntaxTree::IdentifierExpression(
@@ -479,15 +495,29 @@ fn handle_nullable_declaration(variable_name: &String) -> Result<AbstractSyntaxT
     ))
 }
 
-fn handle_nullable_assignment(variable_name: &String, operator: Operator, expression: AbstractSyntaxTree) -> Result<AbstractSyntaxTree, CompilerError> {
+fn handle_nullable_assignment(
+    variable_name: &String,
+    operator: Operator,
+    expression: AbstractSyntaxTree,
+) -> Result<AbstractSyntaxTree, CompilerError> {
     match operator {
         AssignmentOperator(SimpleAssignment) => {
             if SymbolTable::contains(variable_name) {
-                let variable = SymbolTable::get(variable_name)
-                    .unwrap()
-                    .as_nullable();
+                let old_variable = SymbolTable::get(variable_name).unwrap();
+                if old_variable.is_nullable() {
+                    // nullable variable_name oeprator expression
+                    // nullable variable_name = expression
+                    // TODO: add diagnostics. saying
+                    // you don't need to use nullable keyword twice, once it is declared as nullable it will be nullable forever
+                }
+                // variable_name oeprator expression
+                // nullable variable_name = expression
+
+                let variable = SymbolTable::get(variable_name).unwrap().as_nullable();
                 SymbolTable::add(variable_name.to_string(), variable);
             } else {
+                // nullable variable_name = expression
+                // TODO: use Internal undefined instead of null
                 SymbolTable::add(
                     variable_name.to_string(),
                     Variable::new_nullable(DataType::Null),

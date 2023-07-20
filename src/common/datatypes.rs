@@ -69,7 +69,7 @@ impl Variable {
     pub fn as_nullable(self) -> Self {
         Self {
             value: self.value.clone(),
-            mutability: self.mutability,
+            mutability: true,
             nullability: true,
         }
     }

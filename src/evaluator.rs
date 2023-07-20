@@ -1,4 +1,4 @@
-use crate::common::datatypes::Variable;
+use crate::common::datatypes::{DataType, Variable};
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment;
@@ -70,30 +70,49 @@ impl Evaluator {
                 match operator {
                     Operator::AssignmentOperator(assigmnent) => match assigmnent {
                         Assingment::SimpleAssignment => {
-                            if SymbolTable::contains(name)
-                                && SymbolTable::get(name).unwrap().is_mutable()
-                            {
-                                SymbolTable::add(
-                                    name.to_string(),
-                                    Variable::new_mutable(right_hand.value.clone()),
-                                );
-                            } else if SymbolTable::contains(name) {
-                                return Err(CompilerError::ImmutableVariable(name.clone()));
+                            if let Some(old_variable) = SymbolTable::get(name) {
+                                // && SymbolTable::get(name).unwrap().is_mutable() {
+                                if old_variable.is_mutable() {
+                                    if let DataType::Null = right_hand.value {
+                                        if old_variable.is_nullable() {
+                                            SymbolTable::add(
+                                                name.to_string(),
+                                                Variable::new_nullable(DataType::Null),
+                                            );
+                                        } else {
+                                            return Err(
+                                                CompilerError::NullAssignmentOfNonNullableVariable,
+                                            );
+                                        }
+                                    } else {
+                                        if old_variable.is_nullable() {
+                                            SymbolTable::add(
+                                                name.to_string(),
+                                                right_hand.clone().as_nullable(),
+                                            );
+                                        } else {
+                                            SymbolTable::add(name.to_string(), right_hand.clone().as_mutable());
+                                        }
+                                    }
+                                } else {
+                                    return Err(CompilerError::ImmutableVariable(name.to_string()));
+                                }
                             } else {
                                 SymbolTable::add(name.to_string(), right_hand.clone());
                             }
                             Ok(right_hand)
                         }
                         assignment_operator => {
-                            if let Some(variable) = SymbolTable::get(name) {
-                                if SymbolTable::get(name).unwrap().is_mutable() {
-                                    let result = assignment_operator
-                                        .evaluate(variable.clone(), right_hand.clone())?;
-                                    SymbolTable::add(
-                                        name.clone(),
-                                        Variable::new_mutable(result.value.clone()),
-                                    );
-                                    Ok(result)
+                            if let Some(old_variable) = SymbolTable::get(name) {
+                                if old_variable.is_mutable() {
+                                    if old_variable.is_nullable() {
+                                        Err(CompilerError::OperationOnNull)
+                                    } else {
+                                        let result = assignment_operator
+                                            .evaluate(old_variable, right_hand)?;
+                                        SymbolTable::add(name.clone(), result.clone().as_mutable());
+                                        Ok(result)
+                                    }
                                 } else {
                                     Err(CompilerError::ImmutableVariable(name.clone()))
                                 }

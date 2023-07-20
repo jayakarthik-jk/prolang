@@ -27,6 +27,10 @@ impl SymbolTable {
         SYMBOL_TABLE.lock().unwrap().remove(name);
     }
 
+    pub fn clear() {
+        SYMBOL_TABLE.lock().unwrap().clear();
+    }
+
     pub fn print() {
         let table = SYMBOL_TABLE.lock().unwrap();
         let iterator = table.iter();
