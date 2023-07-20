@@ -19,22 +19,18 @@ pub enum CompilerError {
     InvalidUtf8Character,
 
     // Syntax Errors
-    /// token, line, column
     UnexpectedToken(TokenKind, usize, usize),
-    /// token, expected, line, column
-    // UnexpectedTokenWithExpected(TokenKind, TokenKind, usize, usize),
+    NullAssignmentOfNonNullableVariable,
+    InvalidOperationAsAssignmentOperation,
+    InvalidUseOfNullableKeyword,
+    CannotConvertFromImmutableToMutable,
 
     // Evaluation Errors
     InvalidOperatorForBinaryOperation(Operator),
     InvalidOperatorForUnaryOperation(Operator),
-    // InvalidTokenAsBinaryOperator(TokenKind),
-    // InvalidTokenAsUnaryOperator(TokenKind),
-    // InvalidTokenAsLiteral(TokenKind),
-    // InvalidTokenAsOperator(TokenKind),
 
     // Semantic Errors
     UndefinedVariable(String),
-    // InvalidTokenAsIdentifier(TokenKind),
     InvalidExpressionAssignment,
     InvalidAssignment,
     InvalidStringParsing(Variable),
@@ -45,7 +41,6 @@ pub enum CompilerError {
     InvalidUseOfMutableKeyword,
     OperationOnNull,
     ImmutableVariable(String),
-    NullInitializationOfNonNullableVariable,
 }
 
 impl Display for CompilerError {
@@ -67,32 +62,13 @@ impl Display for CompilerError {
                 "Unexpected token '{}' at line {}, column {}",
                 token, line, column
             ),
-            // CompilerError::UnexpectedTokenWithExpected(token, expected, line, column) => format!(
-            //     "Unexpected token '{}' at line {}, column {}. Expected {}",
-            //     token, line, column, expected
-            // ),
-            // CompilerError::InvalidTokenAsBinaryOperator(token) => {
-            //     format!("Invalid token '{}' as binary operator", token)
-            // }
             CompilerError::InvalidOperatorForBinaryOperation(operator) => {
                 format!("Invalid operator '{}' for binary operation", operator)
             }
             CompilerError::InvalidOperatorForUnaryOperation(operator) => {
                 format!("Invalid operator '{}' for unary operation", operator)
             }
-            // CompilerError::InvalidTokenAsUnaryOperator(token) => {
-            //     format!("Invalid token '{}' as unary operator", token)
-            // }
-            // CompilerError::InvalidTokenAsLiteral(token) => {
-            //     format!("Invalid token '{}' as literal", token)
-            // }
-            // CompilerError::InvalidTokenAsOperator(token) => {
-            //     format!("Invalid token '{}' as operator", token)
-            // }
             CompilerError::UndefinedVariable(name) => format!("Undefined variable '{}'", name),
-            // CompilerError::InvalidTokenAsIdentifier(token) => {
-            //     format!("Invalid token '{}' as identifier", token)
-            // }
             CompilerError::InvalidExpressionAssignment => {
                 "Invalid expression assignment".to_string()
             }
@@ -113,10 +89,25 @@ impl Display for CompilerError {
                 "Cannot perform operation on Undefined".to_string()
             }
             CompilerError::InvalidUtf8Character => "Invalid UTF-8 character".to_string(),
-            CompilerError::InvalidUseOfMutableKeyword => "Invalid use of `mutable` keyword".to_string(),
+            CompilerError::InvalidUseOfMutableKeyword => {
+                "Invalid use of `mutable` keyword".to_string()
+            }
             CompilerError::OperationOnNull => "Cannot perform operation on Null".to_string(),
-            CompilerError::ImmutableVariable(name) => format!("cannot mutate Immutable variable '{}'", name),
-            CompilerError::NullInitializationOfNonNullableVariable => "Cannot initialize a non-nullable variable with Null".to_string(),
+            CompilerError::ImmutableVariable(name) => {
+                format!("cannot mutate Immutable variable '{}'", name)
+            }
+            CompilerError::NullAssignmentOfNonNullableVariable => {
+                "Cannot assign null to a non-nullable variable".to_string()
+            }
+            CompilerError::InvalidOperationAsAssignmentOperation => {
+                "Invalid operation as assignment operation".to_string()
+            }
+            CompilerError::InvalidUseOfNullableKeyword => {
+                "Invalid use of `nullable` keyword".to_string()
+            }
+            CompilerError::CannotConvertFromImmutableToMutable => {
+                "Cannot convert from Immutable to Mutable".to_string()
+            }
         };
         write!(f, "{}", text.red())
     }

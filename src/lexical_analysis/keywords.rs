@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::Variable;
+use crate::common::datatypes::{DataType, Variable};
 
 use crate::lexical_analysis::token::TokenKind::*;
 
@@ -15,7 +15,9 @@ pub enum Keyword {
     Not,
     Xor,
     Is,
+    Null,
     Mutable,
+    Nullable,
 }
 use self::Keyword::*;
 
@@ -30,6 +32,8 @@ impl Keyword {
             "not" => KeywordToken(Not),
             "xor" => KeywordToken(Xor),
             "mutable" => KeywordToken(Mutable),
+            "nullable" => KeywordToken(Nullable),
+            "null" => LiteralToken(Variable::new(DataType::Null)),
             identifier => IdentifierToken(identifier.to_string()),
         };
         token
@@ -47,6 +51,8 @@ impl Display for Keyword {
             Xor => "xor",
             Is => "is",
             Mutable => "mutable",
+            Nullable => "nullable",
+            Null => "null",
         };
         write!(f, "{}", text)
     }

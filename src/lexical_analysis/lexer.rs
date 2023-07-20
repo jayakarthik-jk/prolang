@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use super::token::{Token, TokenKind};
 use crate::common::datatypes::Variable;
@@ -147,7 +148,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(Variable::from(string.to_string())),
+                    TokenKind::LiteralToken(Variable::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );
@@ -170,7 +171,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(Variable::from(string.to_string())),
+                    TokenKind::LiteralToken(Variable::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );

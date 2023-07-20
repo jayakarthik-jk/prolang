@@ -1,8 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum DataType {
-    String(String),
+    String(Arc<String>),
     Float(f64),
     Integer(i128),
     Boolean(bool),
@@ -66,10 +66,24 @@ impl Variable {
             nullability: true,
         }
     }
+    pub fn as_nullable(self) -> Self {
+        Self {
+            value: self.value.clone(),
+            mutability: true,
+            nullability: true,
+        }
+    }
+    pub fn as_mutable(self) -> Self {
+        Self {
+            value: self.value.clone(),
+            mutability: true,
+            nullability: self.nullability,
+        }
+    }
 }
 
-impl From<String> for Variable {
-    fn from(value: String) -> Self {
+impl From<Arc<String>> for Variable {
+    fn from(value: Arc<String>) -> Self {
         Self {
             value: DataType::String(value),
             mutability: false,

@@ -1,11 +1,12 @@
-use compiler::common::symbol_table::SymbolTable;
-use compiler::evaluator::Evaluator;
-use compiler::lexical_analysis::lexer::Lexer;
-use compiler::semantic_analysis::binder::Binder;
-use compiler::syntax_analysis::ast::AbstractSyntaxTree;
-use compiler::syntax_analysis::parser::Parser;
+use prolang::common::symbol_table::SymbolTable;
+use prolang::evaluator::Evaluator;
+use prolang::lexical_analysis::lexer::Lexer;
+use prolang::semantic_analysis::binder::Binder;
+use prolang::syntax_analysis::ast::AbstractSyntaxTree;
+use prolang::syntax_analysis::parser::Parser;
 
 use std::io::stdin;
+use std::io::Write;
 
 fn main() {
     console_mode();
@@ -13,21 +14,31 @@ fn main() {
 
 fn console_mode() {
     let stdin = stdin();
-    let mut display_progress = false;
+    let mut display_progress = true;
     loop {
-        println!("$:");
-
+        print!("$ ");
+        std::io::stdout().flush().unwrap();
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        // println!("{:?}", input);
+        println!("input: {:?}", input);
 
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"progress()".to_string()) {
+        if let std::cmp::Ordering::Equal = input.trim().cmp(&"progress".to_string()) {
             display_progress = !display_progress;
             continue;
         }
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"exit()".to_string()) {
+        if let std::cmp::Ordering::Equal = input.trim().cmp(&"exit".to_string()) {
             break;
+        }
+        if let std::cmp::Ordering::Equal = input.trim().cmp(&"clear".to_string()) {
+            // clear the console
+            println!("{}[2J", 27 as char);
+            continue;
+        }
+        if let std::cmp::Ordering::Equal = input.trim().cmp(&"clear_table".to_string()) {
+            // clear the symbol table
+            SymbolTable::clear();
+            continue;
         }
 
         let mut lexer = Lexer::new(input);
