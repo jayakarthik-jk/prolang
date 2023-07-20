@@ -6,6 +6,7 @@ use prolang::syntax_analysis::ast::AbstractSyntaxTree;
 use prolang::syntax_analysis::parser::Parser;
 
 use std::io::stdin;
+use std::io::Write;
 
 fn main() {
     console_mode();
@@ -13,10 +14,10 @@ fn main() {
 
 fn console_mode() {
     let stdin = stdin();
-    let mut display_progress = false;
+    let mut display_progress = true;
     loop {
-        println!("$:");
-
+        print!("$ ");
+        std::io::stdout().flush().unwrap();
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 

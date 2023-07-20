@@ -22,7 +22,7 @@ impl Display for Assingment {
             Assingment::MultiplicationAssignment => "*=",
             Assingment::DivisionAssignment => "/=",
             Assingment::ModuloAssignment => "%=",
-            Assingment::ExponentiationAssignment => "^=",
+            Assingment::ExponentiationAssignment => "**=",
         };
         write!(f, "{}", text)
     }
