@@ -85,15 +85,18 @@ impl Evaluator {
                             Ok(right_hand)
                         }
                         assignment_operator => {
-                            // TODO: check if it is correct
                             if let Some(variable) = SymbolTable::get(name) {
-                                let result = assignment_operator
-                                    .evaluate(variable.clone(), right_hand.clone())?;
-                                SymbolTable::add(
-                                    name.clone(),
-                                    Variable::new_mutable(result.value.clone()),
-                                );
-                                Ok(result)
+                                if SymbolTable::get(name).unwrap().is_mutable() {
+                                    let result = assignment_operator
+                                        .evaluate(variable.clone(), right_hand.clone())?;
+                                    SymbolTable::add(
+                                        name.clone(),
+                                        Variable::new_mutable(result.value.clone()),
+                                    );
+                                    Ok(result)
+                                } else {
+                                    Err(CompilerError::ImmutableVariable(name.clone()))
+                                }
                             } else {
                                 Err(CompilerError::UndefinedVariable(name.clone()))
                             }
