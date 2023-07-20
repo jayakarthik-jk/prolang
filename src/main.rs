@@ -1,9 +1,9 @@
-use compiler::common::symbol_table::SymbolTable;
-use compiler::evaluator::Evaluator;
-use compiler::lexical_analysis::lexer::Lexer;
-use compiler::semantic_analysis::binder::Binder;
-use compiler::syntax_analysis::ast::AbstractSyntaxTree;
-use compiler::syntax_analysis::parser::Parser;
+use prolang::common::symbol_table::SymbolTable;
+use prolang::evaluator::Evaluator;
+use prolang::lexical_analysis::lexer::Lexer;
+use prolang::semantic_analysis::binder::Binder;
+use prolang::syntax_analysis::ast::AbstractSyntaxTree;
+use prolang::syntax_analysis::parser::Parser;
 
 use std::io::stdin;
 
