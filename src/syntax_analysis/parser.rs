@@ -42,7 +42,7 @@ impl Parser {
                 _ => self.parse_arithmetic_expression(0),
             },
             TokenKind::IdentifierToken(name) => {
-                if let Some((operator, length)) = self.get_operator(1) {
+                if let Some((operator, length)) = self.match_operator(1) {
                     if let AssignmentOperator(_) = operator {
                         for _ in 0..length {
                             self.lexer.advance();
@@ -62,12 +62,90 @@ impl Parser {
                 }
             }
             _ => self.parse_arithmetic_expression(0),
+            // TokenKind::LiteralToken(_) => todo!(),
+            // TokenKind::WhitespaceToken(_) => todo!(),
+            // TokenKind::NewLineToken => todo!(),
+            // TokenKind::SymbolToken(_) => todo!(),
+            // TokenKind::FactoryToken => todo!(),
+            // TokenKind::EndOfFileToken => todo!(),
+        }
+    }
+
+    fn parse_arithmetic_expression(
+        &self,
+        parent_precedence: u8,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let mut left = if let Some((operator, _)) = self.match_operator(0) {
+            if operator.get_unery_precedence() >= parent_precedence {
+                self.lexer.advance();
+                let expression =
+                    self.parse_arithmetic_expression(operator.get_unery_precedence())?;
+                AbstractSyntaxTree::UnaryExpression(operator, Box::new(expression))
+            } else {
+                self.parse_factor()?
+            }
+        } else {
+            self.parse_factor()?
+        };
+
+        while let Some((operator, length)) = self.match_operator(0) {
+            let precedence = operator.get_binary_precedence();
+            if precedence <= parent_precedence {
+                break;
+            }
+            for _ in 0..length {
+                self.lexer.advance();
+            }
+            let right = self.parse_arithmetic_expression(precedence)?;
+            left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
+        }
+
+        Ok(left)
+    }
+
+    fn parse_factor(&self) -> Result<AbstractSyntaxTree, CompilerError> {
+        let token = self.lexer.get_current_token_and_advance();
+        match &token.kind {
+            TokenKind::LiteralToken(variable) => {
+                Ok(AbstractSyntaxTree::LiteralExpression(variable.clone()))
+            }
+            TokenKind::SymbolToken(symbol) => match symbol {
+                OpenParanthesis => {
+                    let expression = self.parse_expression()?;
+                    let next_token = self.lexer.get_current_token_and_advance();
+                    if next_token.kind == TokenKind::SymbolToken(CloseParanthesis) {
+                        Ok(AbstractSyntaxTree::ParenthesizedExpression(Box::new(
+                            expression,
+                        )))
+                    } else {
+                        Err(CompilerError::UnexpectedToken(
+                            TokenKind::SymbolToken(CloseParanthesis),
+                            token.line,
+                            token.column,
+                        ))
+                    }
+                }
+                CloseParanthesis => Err(CompilerError::UnexpectedToken(
+                    TokenKind::SymbolToken(CloseParanthesis),
+                    token.line,
+                    token.column,
+                )),
+                _ => todo!("parse_factor"),
+            },
+            TokenKind::IdentifierToken(name) => {
+                Ok(AbstractSyntaxTree::IdentifierExpression(name.clone()))
+            }
+            kind => Err(CompilerError::UnexpectedToken(
+                kind.clone(),
+                token.line,
+                token.column,
+            )),
         }
     }
 
     fn handle_nullable_keyword(&self) -> Result<AbstractSyntaxTree, CompilerError> {
         if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
-            if let Some((operator, length)) = self.get_operator(2) {
+            if let Some((operator, length)) = self.match_operator(2) {
                 // nullable variable_name operator expression
                 for _ in 0..length {
                     self.lexer.advance();
@@ -89,7 +167,7 @@ impl Parser {
 
     fn handle_mutable_keyword(&self) -> Result<AbstractSyntaxTree, CompilerError> {
         if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
-            if let Some((operator, length)) = self.get_operator(2) {
+            if let Some((operator, length)) = self.match_operator(2) {
                 // `mutable` variable_name operator expression
                 for _ in 0..length {
                     self.lexer.advance();
@@ -109,39 +187,7 @@ impl Parser {
         }
     }
 
-    fn parse_arithmetic_expression(
-        &self,
-        parent_precedence: u8,
-    ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let mut left = if let Some((operator, _)) = self.get_operator(0) {
-            if operator.get_unery_precedence() >= parent_precedence {
-                self.lexer.advance();
-                let expression =
-                    self.parse_arithmetic_expression(operator.get_unery_precedence())?;
-                AbstractSyntaxTree::UnaryExpression(operator, Box::new(expression))
-            } else {
-                self.parse_factor()?
-            }
-        } else {
-            self.parse_factor()?
-        };
-
-        while let Some((operator, length)) = self.get_operator(0) {
-            let precedence = operator.get_binary_precedence();
-            if precedence <= parent_precedence {
-                break;
-            }
-            for _ in 0..length {
-                self.lexer.advance();
-            }
-            let right = self.parse_arithmetic_expression(precedence)?;
-            left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
-        }
-
-        Ok(left)
-    }
-
-    fn get_operator(&self, offset: usize) -> Option<(Operator, usize)> {
+    fn match_operator(&self, offset: usize) -> Option<(Operator, usize)> {
         // TODO: use match instead of if let to include keyword operators
         // like 'and', 'or', 'not', 'xor', 'is', 'in', 'not in', 'is not'
         let (operator, length) = if let TokenKind::SymbolToken(operator_symbol) =
@@ -357,46 +403,6 @@ impl Parser {
             return None;
         };
         Some((operator, offset + length))
-    }
-
-    fn parse_factor(&self) -> Result<AbstractSyntaxTree, CompilerError> {
-        let token = self.lexer.get_current_token_and_advance();
-        match &token.kind {
-            TokenKind::LiteralToken(variable) => {
-                Ok(AbstractSyntaxTree::LiteralExpression(variable.clone()))
-            }
-            TokenKind::SymbolToken(symbol) => match symbol {
-                OpenParanthesis => {
-                    let expression = self.parse_expression()?;
-                    let next_token = self.lexer.get_current_token_and_advance();
-                    if next_token.kind == TokenKind::SymbolToken(CloseParanthesis) {
-                        Ok(AbstractSyntaxTree::ParenthesizedExpression(Box::new(
-                            expression,
-                        )))
-                    } else {
-                        Err(CompilerError::UnexpectedToken(
-                            TokenKind::SymbolToken(CloseParanthesis),
-                            token.line,
-                            token.column,
-                        ))
-                    }
-                }
-                CloseParanthesis => Err(CompilerError::UnexpectedToken(
-                    TokenKind::SymbolToken(CloseParanthesis),
-                    token.line,
-                    token.column,
-                )),
-                _ => todo!("parse_factor"),
-            },
-            TokenKind::IdentifierToken(name) => {
-                Ok(AbstractSyntaxTree::IdentifierExpression(name.clone()))
-            }
-            kind => Err(CompilerError::UnexpectedToken(
-                kind.clone(),
-                token.line,
-                token.column,
-            )),
-        }
     }
 }
 

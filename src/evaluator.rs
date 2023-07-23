@@ -91,7 +91,10 @@ impl Evaluator {
                                                 right_hand.clone().as_nullable(),
                                             );
                                         } else {
-                                            SymbolTable::add(name.to_string(), right_hand.clone().as_mutable());
+                                            SymbolTable::add(
+                                                name.to_string(),
+                                                right_hand.clone().as_mutable(),
+                                            );
                                         }
                                     }
                                 } else {

@@ -1,15 +1,25 @@
 use prolang::common::symbol_table::SymbolTable;
-use prolang::evaluator::Evaluator;
-use prolang::lexical_analysis::lexer::Lexer;
-use prolang::semantic_analysis::binder::Binder;
-use prolang::syntax_analysis::ast::AbstractSyntaxTree;
-use prolang::syntax_analysis::parser::Parser;
+use prolang::interpretation::interpretate;
 
 use std::io::stdin;
 use std::io::Write;
 
 fn main() {
-    console_mode();
+    let stdin = stdin();
+    print!("Enter the mode: ");
+    std::io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    stdin.read_line(&mut input).unwrap();
+
+    if let std::cmp::Ordering::Equal = input.trim().cmp(&"file".to_string()) {
+        file_mode();
+        return;
+    }
+    if let std::cmp::Ordering::Equal = input.trim().cmp(&"console".to_string()) {
+        console_mode();
+        return;
+    }
 }
 
 fn console_mode() {
@@ -20,8 +30,6 @@ fn console_mode() {
         std::io::stdout().flush().unwrap();
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
-
-        println!("input: {:?}", input);
 
         if let std::cmp::Ordering::Equal = input.trim().cmp(&"progress".to_string()) {
             display_progress = !display_progress;
@@ -41,57 +49,30 @@ fn console_mode() {
             continue;
         }
 
-        let mut lexer = Lexer::new(input);
-
-        if let Err(error) = lexer.lex() {
-            eprintln!("lexer error: {}", error);
-            continue;
+        match interpretate(input) {
+            Ok(result) => println!("{}", result),
+            Err(error) => println!("{}", error),
         }
-
-        let mut parser = Parser::new(lexer);
-
-        let ast = match parser.parse() {
-            Ok(expression) => {
-                if display_progress {
-                    AbstractSyntaxTree::print(&expression);
-                }
-                expression
-            }
-            Err(error) => {
-                eprintln!("parser error: {}", error);
-                continue;
-            }
-        };
-
-        let mut binder = Binder::new(ast);
-
-        binder.display_process = display_progress;
-
-        let semantic_tree = match binder.bind() {
-            Ok(semantic_tree) => semantic_tree,
-            Err(err) => {
-                eprintln!("binder error: {}", err);
-                continue;
-            }
-        };
-
-        // SemanticTree::print(&semantic_tree);
-
-        let evaluator = Evaluator::new(semantic_tree);
-
-        let result = match evaluator.evaluate() {
-            Ok(result) => result,
-            Err(err) => {
-                eprintln!("{}", err);
-                continue;
-            }
-        };
-        if display_progress {
-            println!("Symbol table:");
-            println!("-------------");
-            SymbolTable::print();
-            println!("-------------");
-        }
-        println!("{}", result);
     }
+}
+
+fn file_mode() {
+    use std::fs::read_to_string;
+
+    let file_name = "input.prolang";
+
+    let input = match read_to_string(file_name) {
+        Ok(input) => input,
+        Err(error) => {
+            eprintln!("error reading file: {}", error);
+            return;
+        }
+    };
+
+    match interpretate(input) {
+        Ok(result) => println!("{}", result),
+        Err(err) => {
+            eprintln!("{}", err);
+        }
+    };
 }

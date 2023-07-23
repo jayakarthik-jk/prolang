@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::fmt::Display;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -16,6 +17,12 @@ pub struct Lexer {
     current: char,
     pub line: usize,
     pub column: usize,
+}
+
+impl Display for Lexer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self.tokens)
+    }
 }
 
 impl Lexer {
@@ -60,6 +67,14 @@ impl Lexer {
 
     pub fn parse_token(&mut self) -> Result<Token, CompilerError> {
         let current_token = match self.current {
+            '\0' => Token::new(TokenKind::EndOfFileToken, self.line, self.column),
+            '\n' => {
+                let token = Token::new(TokenKind::NewLineToken, self.line, self.column);
+                self._next();
+                self.line += 1;
+                self.column = 1;
+                token
+            }
             current if current.is_ascii_whitespace() => {
                 let start = self.position;
                 while self.current.is_ascii_whitespace() {
@@ -69,14 +84,6 @@ impl Lexer {
                 let token = Token::new(TokenKind::WhitespaceToken(count), self.line, self.column);
                 return Ok(token);
             }
-            '\n' => {
-                let token = Token::new(TokenKind::NewLineToken, self.line, self.column);
-                self._next();
-                self.line += 1;
-                self.column = 1;
-                token
-            }
-            '\0' => Token::new(TokenKind::EndOfFileToken, self.line, self.column),
             current if current.is_ascii_digit() => {
                 let start = self.position;
                 while self.current.is_ascii_digit() {
