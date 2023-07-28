@@ -70,7 +70,6 @@ impl Arithmetic {
                 Infinity => variable,
                 String(_) => return Err(CompilerError::InvalidUneryOperation),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
-                Null => return Err(CompilerError::OperationOnNull),
             },
             operator => {
                 return Err(CompilerError::InvalidOperatorForUnaryOperation(
@@ -113,7 +112,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -147,7 +145,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -221,7 +218,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -348,7 +344,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -474,7 +469,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }
@@ -578,7 +572,6 @@ impl Arithmetic {
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
-            (_, Null) | (Null, _) => return Err(CompilerError::OperationOnNull),
         };
         Ok(result)
     }

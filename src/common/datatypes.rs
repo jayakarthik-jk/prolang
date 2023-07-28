@@ -8,14 +8,12 @@ pub enum DataType {
     Boolean(bool),
     Infinity,
     InternalUndefined,
-    Null,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Variable {
     pub value: DataType,
     mutability: bool,
-    nullability: bool,
 }
 
 impl Variable {
@@ -27,7 +25,6 @@ impl Variable {
             DataType::Boolean(a) => a,
             DataType::Infinity => true,
             DataType::InternalUndefined => false,
-            DataType::Null => false,
         }
     }
     pub fn is_falsy(&self) -> bool {
@@ -36,48 +33,28 @@ impl Variable {
     pub fn is_mutable(&self) -> bool {
         self.mutability
     }
-    pub fn is_nullable(&self) -> bool {
-        self.nullability
-    }
+
     pub fn set_mutable(&mut self, mutability: bool) {
         self.mutability = mutability;
     }
-    pub fn set_nullable(&mut self, nullability: bool) {
-        self.nullability = nullability;
-    }
+
     pub fn new(value: DataType) -> Self {
         Self {
             value,
             mutability: false,
-            nullability: false,
         }
     }
     pub fn new_mutable(value: DataType) -> Self {
         Self {
             value,
             mutability: true,
-            nullability: false,
         }
     }
-    pub fn new_nullable(value: DataType) -> Self {
-        Self {
-            value,
-            mutability: true,
-            nullability: true,
-        }
-    }
-    pub fn as_nullable(self) -> Self {
-        Self {
-            value: self.value.clone(),
-            mutability: true,
-            nullability: true,
-        }
-    }
+
     pub fn as_mutable(self) -> Self {
         Self {
             value: self.value.clone(),
             mutability: true,
-            nullability: self.nullability,
         }
     }
 }
@@ -87,7 +64,6 @@ impl From<Arc<String>> for Variable {
         Self {
             value: DataType::String(value),
             mutability: false,
-            nullability: false,
         }
     }
 }
@@ -96,7 +72,6 @@ impl From<i128> for Variable {
         Self {
             value: DataType::Integer(value),
             mutability: false,
-            nullability: false,
         }
     }
 }
@@ -105,7 +80,6 @@ impl From<bool> for Variable {
         Self {
             value: DataType::Boolean(value),
             mutability: false,
-            nullability: false,
         }
     }
 }
@@ -114,7 +88,6 @@ impl From<f64> for Variable {
         Self {
             value: DataType::Float(value),
             mutability: false,
-            nullability: false,
         }
     }
 }
@@ -123,7 +96,6 @@ impl From<DataType> for Variable {
         Self {
             value,
             mutability: false,
-            nullability: false,
         }
     }
 }
@@ -137,7 +109,6 @@ impl Display for Variable {
             DataType::Boolean(a) => a.to_string(),
             DataType::Infinity => "Infinity".to_string(),
             DataType::InternalUndefined => "Undefined".to_string(),
-            DataType::Null => "Null".to_string(),
         };
         write!(f, "{text}")
     }

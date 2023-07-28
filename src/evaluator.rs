@@ -1,4 +1,4 @@
-use crate::common::datatypes::{DataType, Variable};
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment;
@@ -71,32 +71,11 @@ impl Evaluator {
                     Operator::AssignmentOperator(assigmnent) => match assigmnent {
                         Assingment::SimpleAssignment => {
                             if let Some(old_variable) = SymbolTable::get(name) {
-                                // && SymbolTable::get(name).unwrap().is_mutable() {
                                 if old_variable.is_mutable() {
-                                    if let DataType::Null = right_hand.value {
-                                        if old_variable.is_nullable() {
-                                            SymbolTable::add(
-                                                name.to_string(),
-                                                Variable::new_nullable(DataType::Null),
-                                            );
-                                        } else {
-                                            return Err(
-                                                CompilerError::NullAssignmentOfNonNullableVariable,
-                                            );
-                                        }
-                                    } else {
-                                        if old_variable.is_nullable() {
-                                            SymbolTable::add(
-                                                name.to_string(),
-                                                right_hand.clone().as_nullable(),
-                                            );
-                                        } else {
-                                            SymbolTable::add(
-                                                name.to_string(),
-                                                right_hand.clone().as_mutable(),
-                                            );
-                                        }
-                                    }
+                                    SymbolTable::add(
+                                        name.to_string(),
+                                        right_hand.clone().as_mutable(),
+                                    );
                                 } else {
                                     return Err(CompilerError::ImmutableVariable(name.to_string()));
                                 }
@@ -108,14 +87,10 @@ impl Evaluator {
                         assignment_operator => {
                             if let Some(old_variable) = SymbolTable::get(name) {
                                 if old_variable.is_mutable() {
-                                    if old_variable.is_nullable() {
-                                        Err(CompilerError::OperationOnNull)
-                                    } else {
-                                        let result = assignment_operator
-                                            .evaluate(old_variable, right_hand)?;
-                                        SymbolTable::add(name.clone(), result.clone().as_mutable());
-                                        Ok(result)
-                                    }
+                                    let result =
+                                        assignment_operator.evaluate(old_variable, right_hand)?;
+                                    SymbolTable::add(name.clone(), result.clone().as_mutable());
+                                    Ok(result)
                                 } else {
                                     Err(CompilerError::ImmutableVariable(name.clone()))
                                 }

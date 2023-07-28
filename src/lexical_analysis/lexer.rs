@@ -384,9 +384,9 @@ impl Lexer {
         self.tokens.len()
     }
 
-    pub fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
-        Rc::new(Token::new(TokenKind::FactoryToken, line, column))
-    }
+    // pub fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
+    //     Rc::new(Token::new(TokenKind::FactoryToken, line, column))
+    // }
 
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);

@@ -2,15 +2,21 @@
 
 /// only for testing purposes
 fn get_evaluator(source: String) -> crate::common::datatypes::Variable {
+    use crate::common::datatypes::{Variable, DataType};
+
     let mut lexer = crate::lexical_analysis::lexer::Lexer::new(source);
     lexer.lex().unwrap();
     let mut parser = crate::syntax_analysis::parser::Parser::new(lexer);
-    let ast = parser.parse().unwrap();
-
-    let binder = crate::semantic_analysis::binder::Binder::new(ast);
-    let semantic_tree = binder.bind().unwrap();
-    let evaluator = crate::evaluator::Evaluator::new(semantic_tree);
-    evaluator.evaluate().unwrap()
+    let asts = parser.parse().unwrap();
+    let mut result: Variable = Variable::from(DataType::InternalUndefined);
+    println!("asts: {:?}", asts);
+    for ast in asts {
+        let binder = crate::semantic_analysis::binder::Binder::new(ast);
+        let semantic_tree = binder.bind().unwrap();
+        let evaluator = crate::evaluator::Evaluator::new(semantic_tree);
+        result = evaluator.evaluate().unwrap()
+    }
+    result
 }
 
 #[test]

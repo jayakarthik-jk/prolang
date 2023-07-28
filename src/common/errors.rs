@@ -39,8 +39,10 @@ pub enum CompilerError {
     MathUndefined,
     OperationOnUndefined,
     InvalidUseOfMutableKeyword,
-    OperationOnNull,
     ImmutableVariable(String),
+
+    // warnings
+    Warnings(&'static str),
 }
 
 impl Display for CompilerError {
@@ -92,7 +94,6 @@ impl Display for CompilerError {
             CompilerError::InvalidUseOfMutableKeyword => {
                 "Invalid use of `mutable` keyword".to_string()
             }
-            CompilerError::OperationOnNull => "Cannot perform operation on Null".to_string(),
             CompilerError::ImmutableVariable(name) => {
                 format!("cannot mutate Immutable variable '{}'", name)
             }
@@ -108,6 +109,7 @@ impl Display for CompilerError {
             CompilerError::CannotConvertFromImmutableToMutable => {
                 "Cannot convert from Immutable to Mutable".to_string()
             }
+            CompilerError::Warnings(warning) => warning.to_string(),
         };
         write!(f, "{}", text.red())
     }

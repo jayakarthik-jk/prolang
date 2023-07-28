@@ -1,3 +1,4 @@
+use prolang::common::diagnostics::Diagnostics;
 use prolang::common::symbol_table::SymbolTable;
 use prolang::interpretation::interpretate;
 
@@ -49,17 +50,21 @@ fn console_mode() {
             continue;
         }
 
-        match interpretate(input) {
-            Ok(result) => println!("{}", result),
-            Err(error) => println!("{}", error),
+        if let Err(error) = interpretate(input) {
+            println!("{}", error);
         }
+        println!("\nSymbol Table:\n");
+        SymbolTable::print();
+        Diagnostics::read_errors().iter().for_each(|error| {
+            println!("{}", error);
+        });
     }
 }
 
 fn file_mode() {
     use std::fs::read_to_string;
 
-    let file_name = "input.prolang";
+    let file_name = "app.prolang";
 
     let input = match read_to_string(file_name) {
         Ok(input) => input,
@@ -69,10 +74,13 @@ fn file_mode() {
         }
     };
 
-    match interpretate(input) {
-        Ok(result) => println!("{}", result),
-        Err(err) => {
-            eprintln!("{}", err);
-        }
-    };
+    if let Err(error) = interpretate(input) {
+        println!("{}", error);
+    } else {
+        println!("\nSymbol Table:\n");
+        SymbolTable::print();
+    }
+    Diagnostics::read_errors().iter().for_each(|error| {
+        println!("{}", error);
+    });
 }

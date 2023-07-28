@@ -35,13 +35,7 @@ impl SymbolTable {
         let table = SYMBOL_TABLE.lock().unwrap();
         let iterator = table.iter();
         for (name, value) in iterator {
-            println!(
-                "{}: {}, mutable {} nullable {}",
-                name,
-                value,
-                value.is_mutable(),
-                value.is_nullable()
-            );
+            println!("{}: {}, mutable {}", name, value, value.is_mutable(),);
         }
     }
 }

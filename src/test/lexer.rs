@@ -630,7 +630,7 @@ fn test_keywords() {
     use crate::lexical_analysis::keywords::Keyword::*;
     use crate::lexical_analysis::token::TokenKind::*;
 
-    let source = "and or xor not true false mutable nullable".to_string();
+    let source = "and or xor not true false mutable".to_string();
     let lexer = get_lexer(source);
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -656,9 +656,5 @@ fn test_keywords() {
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
         KeywordToken(Mutable)
-    );
-    assert_eq!(
-        lexer.get_current_token_and_advance().kind,
-        KeywordToken(Nullable)
     );
 }

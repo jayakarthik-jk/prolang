@@ -1,4 +1,4 @@
-use crate::common::datatypes::Variable;
+use crate::common::datatypes::{Variable, DataType};
 use crate::common::errors::CompilerError;
 use crate::common::operators::Operator;
 use crate::common::symbol_table::SymbolTable;
@@ -63,8 +63,12 @@ impl Binder {
             println!("binding identifier: {}", name);
         }
 
-        if SymbolTable::contains(&name) {
-            Ok(SemanticTree::IdentifierExpression(name))
+        if let Some(variable) = SymbolTable::get(&name) {
+            if variable.value == DataType::InternalUndefined {
+                Ok(SemanticTree::IdentifierExpression(name))
+            } else {
+                Err(CompilerError::UndefinedVariable(name))
+            }
         } else {
             Err(CompilerError::UndefinedVariable(name))
         }

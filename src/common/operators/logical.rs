@@ -55,7 +55,6 @@ impl Logical {
                 Infinity => Variable::from(Infinity),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
                 //TODO: give a good error message, saying that null you may missed `is` operator before not
-                Null => return Err(CompilerError::OperationOnNull),
             },
             _ => Variable::from(false),
         };
