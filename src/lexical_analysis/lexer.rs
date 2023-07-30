@@ -146,8 +146,7 @@ impl Lexer {
                     // TODO: Handle escape characters
                 }
                 let string = if self.current == '\'' {
-                    let string = self.extract_string_from_start_to_current(start)?;
-                    string
+                    self.extract_string_from_start_to_current(start)?
                 } else {
                     return Err(CompilerError::UnterminatedString(
                         self.line,
@@ -169,8 +168,7 @@ impl Lexer {
                     // TODO: Handle escape characters
                 }
                 let string = if self.current == '\"' {
-                    let string = self.extract_string_from_start_to_current(start)?;
-                    string
+                    self.extract_string_from_start_to_current(start)?
                 } else {
                     return Err(CompilerError::UnterminatedString(
                         self.line,
@@ -228,6 +226,42 @@ impl Lexer {
                 self._next();
                 token
             }
+            '{' => {
+                let token = Token::new(
+                    TokenKind::SymbolToken(OpenCurlyBracket),
+                    self.line,
+                    self.column,
+                );
+                self._next();
+                token
+            }
+            '}' => {
+                let token = Token::new(
+                    TokenKind::SymbolToken(CloseCurlyBracket),
+                    self.line,
+                    self.column,
+                );
+                self._next();
+                token
+            }
+            '[' => {
+                let token = Token::new(
+                    TokenKind::SymbolToken(OpenSquareBracket),
+                    self.line,
+                    self.column,
+                );
+                self._next();
+                token
+            }
+            ']' => {
+                let token = Token::new(
+                    TokenKind::SymbolToken(CloseSquareBracket),
+                    self.line,
+                    self.column,
+                );
+                self._next();
+                token
+            }
             '=' => {
                 let token = Token::new(TokenKind::SymbolToken(Equals), self.line, self.column);
                 self._next();
@@ -267,12 +301,10 @@ impl Lexer {
     ) -> Result<String, CompilerError> {
         let value = if self.position - start == 0 {
             vec![self.source[start]]
+        } else if self.current == '\0' {
+            self.source[start..=self.position].to_vec()
         } else {
-            if self.current == '\0' {
-                self.source[start..=self.position].to_vec()
-            } else {
-                self.source[start..self.position].to_vec()
-            }
+            self.source[start..self.position].to_vec()
         };
         if let Ok(value_as_string) = String::from_utf8(value) {
             Ok(value_as_string)

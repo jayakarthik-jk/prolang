@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::common::datatypes::{DataType, Variable};
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::Operator;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
@@ -109,7 +109,7 @@ impl<'a> Binder<'a> {
         let expression = self.bind_statement(expression, block)?;
 
         Ok(AbstractSyntaxTree::UnaryExpression(
-            operator.clone(),
+            *operator,
             Box::new(expression),
         ))
     }
@@ -129,7 +129,7 @@ impl<'a> Binder<'a> {
 
         Ok(AbstractSyntaxTree::BinaryExpression(
             Box::new(left),
-            operator.clone(),
+            *operator,
             Box::new(right),
         ))
     }
@@ -148,7 +148,7 @@ impl<'a> Binder<'a> {
 
         Ok(AbstractSyntaxTree::AssignmentExpression(
             name.clone(),
-            operator.clone(),
+            *operator,
             Box::new(expression),
         ))
     }

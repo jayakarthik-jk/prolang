@@ -53,7 +53,7 @@ impl Variable {
 
     pub fn as_mutable(self) -> Self {
         Self {
-            value: self.value.clone(),
+            value: self.value,
             mutability: true,
         }
     }

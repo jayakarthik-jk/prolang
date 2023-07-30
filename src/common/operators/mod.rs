@@ -71,10 +71,7 @@ impl Operator {
                 Arithmetic::Subtraction => 9,
                 _ => 0,
             },
-            Operator::LogicalOperator(operator) => match operator {
-                Logical::Not => 9,
-                _ => 0,
-            },
+            Operator::LogicalOperator(Logical::Not) => 9,
             _ => 0,
         }
     }

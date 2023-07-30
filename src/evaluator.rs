@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::common::datatypes::DataType::Boolean;
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
@@ -42,7 +43,7 @@ impl<'a> Evaluator<'a> {
                 evaluate_unary_expression(operator, expression, block)
             }
             AbstractSyntaxTree::Identifier(name) => match block.get_symbol(name) {
-                Some(value) => Ok(value.clone()),
+                Some(value) => Ok(value),
                 None => Err(CompilerError::UndefinedVariable(name.clone())),
             },
             AbstractSyntaxTree::AssignmentExpression(name, operator, expression) => {
@@ -51,16 +52,17 @@ impl<'a> Evaluator<'a> {
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
                 Evaluator::_evaluate(expression, block)
             }
-            AbstractSyntaxTree::BlockStatement(_) => todo!(),
+            AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Rc::clone(block)),
         }
     }
 }
 
-fn evaluate_block(block: Rc<Block>) -> Result<(), CompilerError> {
+fn evaluate_block(block: Rc<Block>) -> Result<Variable, CompilerError> {
+    let mut result = Variable::new(Boolean(false));
     for statement in block.statements.iter() {
-        Evaluator::_evaluate(statement, Rc::clone(&block))?;
+        result = Evaluator::_evaluate(statement, Rc::clone(&block))?;
     }
-    Ok(())
+    Ok(result)
 }
 
 fn evaluate_assignment_expression(
@@ -99,9 +101,7 @@ fn evaluate_assignment_expression(
                 }
             }
         },
-        operator => Err(CompilerError::InvalidOperatorForBinaryOperation(
-            operator.clone(),
-        )),
+        operator => Err(CompilerError::InvalidOperatorForBinaryOperation(*operator)),
     }
 }
 
@@ -116,19 +116,17 @@ fn evaluate_unary_expression(
             Subtraction => {
                 Ok(Subtraction.evaluate_unary(Evaluator::_evaluate(expression, block)?)?)
             }
-            operation => Err(CompilerError::InvalidOperatorForUnaryOperation(
-                Operator::ArithmeticOperator(operation.clone()),
+            operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
+                Operator::ArithmeticOperator(*operator),
             )),
         },
         LogicalOperator(operator) => match operator {
             Not => Ok(Not.evaluate_unary(Evaluator::_evaluate(expression, block)?)?),
             operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
-                Operator::LogicalOperator(operator.clone()),
+                Operator::LogicalOperator(*operator),
             )),
         },
-        operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
-            operator.clone(),
-        )),
+        operator => Err(CompilerError::InvalidOperatorForUnaryOperation(*operator)),
     }
 }
 
@@ -144,11 +142,7 @@ fn evaluate_binary_expression(
         ArithmeticOperator(_) | RelationalOperator(_) | LogicalOperator(_) => {
             operator.evaluate(left, right)?
         }
-        operator => {
-            return Err(CompilerError::InvalidOperatorForBinaryOperation(
-                operator.clone(),
-            ))
-        }
+        operator => return Err(CompilerError::InvalidOperatorForBinaryOperation(*operator)),
     };
     Ok(result)
 }

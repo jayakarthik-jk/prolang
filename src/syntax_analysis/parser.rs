@@ -44,14 +44,14 @@ impl Parser {
         let current_token = self.lexer.get_current_token();
         if kind == current_token.kind {
             self.lexer.advance();
-            return current_token;
+            current_token
         } else {
             // add diagnostics
-            return Rc::new(Token::new(
+            Rc::new(Token::new(
                 TokenKind::FactoryToken,
                 current_token.line,
                 current_token.column,
-            ));
+            ))
         }
     }
 
@@ -80,10 +80,7 @@ impl Parser {
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
         match &identifier_token.kind {
-            TokenKind::KeywordToken(keyword) => match keyword {
-                Keyword::Mutable => self.handle_mutable_keyword(block),
-                _ => self.parse_arithmetic_expression(0, block),
-            },
+            TokenKind::KeywordToken(Keyword::Mutable) => self.handle_mutable_keyword(block),
             TokenKind::IdentifierToken(name) => {
                 if let Some((operator, length)) = self.match_operator(1) {
                     if let AssignmentOperator(_) = operator {
@@ -198,7 +195,7 @@ impl Parser {
             } else {
                 // `mutable` variable_name
                 if block.contains_symbol(variable_name) {
-                    return Err(CompilerError::CannotConvertFromImmutableToMutable);
+                    Err(CompilerError::CannotConvertFromImmutableToMutable)
                 } else {
                     Err(CompilerError::UnInitializedVariable(
                         variable_name.to_string(),
@@ -442,8 +439,6 @@ fn handle_mutable_assignment(
                 if old_variable.is_mutable() {
                     // `mutable` variable_name = old_expression
                     // `mutable` variable_name = new_expression
-                    // TODO: add diagnostics. saying
-                    // you don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever
                     Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
                     block.add_symbol(
                         variable_name.to_string(),

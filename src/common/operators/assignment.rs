@@ -31,7 +31,7 @@ impl Display for Assingment {
 impl Assingment {
     pub fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
-            Assingment::SimpleAssignment => return Err(CompilerError::InvalidAssignment),
+            Assingment::SimpleAssignment => Err(CompilerError::InvalidAssignment),
             Assingment::AdditionAssignment => Addition.evaluate(a, b),
             Assingment::SubtractionAssignment => Subtraction.evaluate(a, b),
             Assingment::MultiplicationAssignment => Multiplication.evaluate(a, b),

@@ -1,7 +1,7 @@
 use crate::common::datatypes::Variable;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SymbolTable {
     table: HashMap<String, Variable>,
 }

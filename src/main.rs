@@ -12,17 +12,12 @@ fn main() {
     let mut input = String::new();
     stdin.read_line(&mut input).unwrap();
 
-    if let std::cmp::Ordering::Equal = input.trim().cmp(&"file".to_string()) {
+    if let std::cmp::Ordering::Equal = input.trim().cmp("file") {
         file_mode();
-        return;
-    }
-    if let std::cmp::Ordering::Equal = input.trim().cmp(&"".to_string()) {
+    } else if let std::cmp::Ordering::Equal = input.trim().cmp("") {
         file_mode();
-        return;
-    }
-    if let std::cmp::Ordering::Equal = input.trim().cmp(&"console".to_string()) {
+    } else if let std::cmp::Ordering::Equal = input.trim().cmp("console") {
         console_mode();
-        return;
     }
 }
 
@@ -35,14 +30,14 @@ fn console_mode() {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"progress".to_string()) {
+        if let std::cmp::Ordering::Equal = input.trim().cmp("progress") {
             display_progress = !display_progress;
             continue;
         }
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"exit".to_string()) {
+        if let std::cmp::Ordering::Equal = input.trim().cmp("exit") {
             break;
         }
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"clear".to_string()) {
+        if let std::cmp::Ordering::Equal = input.trim().cmp("clear") {
             // clear the console
             println!("{}[2J", 27 as char);
             continue;

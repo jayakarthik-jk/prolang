@@ -21,7 +21,7 @@ use self::Keyword::*;
 
 impl Keyword {
     pub fn get_keyword_kind(keyword: &str) -> TokenKind {
-        let token = match keyword {
+        match keyword {
             "true" => LiteralToken(Variable::from(true)),
             "false" => LiteralToken(Variable::from(false)),
             "is" => KeywordToken(Is),
@@ -31,8 +31,7 @@ impl Keyword {
             "xor" => KeywordToken(Xor),
             "mutable" => KeywordToken(Mutable),
             identifier => IdentifierToken(identifier.to_string()),
-        };
-        token
+        }
     }
 }
 

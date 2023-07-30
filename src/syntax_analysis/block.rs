@@ -5,7 +5,7 @@ use super::ast::AbstractSyntaxTree;
 use super::symbol_table::SymbolTable;
 use crate::common::datatypes::Variable;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Block {
     pub parent: Option<Rc<Block>>,
     pub statements: Vec<Box<AbstractSyntaxTree>>,
@@ -27,32 +27,20 @@ impl Block {
     pub fn contains_symbol(&self, name: &String) -> bool {
         if self.symbols.borrow().contains(name) {
             true
+        } else if let Some(parent) = self.parent.as_ref() {
+            Block::contains_symbol(parent, name)
         } else {
-            if let Some(parent) = self.parent.as_ref() {
-                if Block::contains_symbol(parent, name) {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
+            false
         }
     }
 
     pub fn get_symbol(&self, name: &String) -> Option<Variable> {
         if let Some(variable) = self.symbols.borrow().get(name) {
             Some(variable)
+        } else if let Some(parent) = self.parent.as_ref() {
+            Block::get_symbol(parent, name)
         } else {
-            if let Some(parent) = self.parent.as_ref() {
-                if let Some(variable) = Block::get_symbol(parent, name) {
-                    Some(variable)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            None
         }
     }
 

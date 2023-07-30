@@ -390,13 +390,9 @@ impl Arithmetic {
                 }
             }
 
-            (Boolean(a), Boolean(b)) => {
+            (Boolean(_), Boolean(b)) => {
                 if b {
-                    if a {
-                        Variable::from(0)
-                    } else {
-                        Variable::from(0)
-                    }
+                    Variable::from(0)
                 } else {
                     Variable::from(Infinity)
                 }
