@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::common::datatypes::{DataType, Variable};
 use crate::common::diagnostics::Diagnostics;
 use crate::common::errors::CompilerError;
@@ -7,12 +9,13 @@ use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational::*;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
-use crate::common::symbol_table::SymbolTable;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::lexer::Lexer;
 use crate::lexical_analysis::symbols::Symbol::*;
-use crate::lexical_analysis::token::TokenKind;
+use crate::lexical_analysis::token::{Token, TokenKind};
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
+
+use super::block::Block;
 
 pub struct Parser {
     lexer: Lexer,
@@ -23,28 +26,63 @@ impl Parser {
         Self { lexer }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<AbstractSyntaxTree>, CompilerError> {
+    pub fn parse(&mut self) -> Result<Rc<Block>, CompilerError> {
         if self.lexer.get_token_count() == 0 {
             self.lexer.lex()?;
         }
-        let mut asts: Vec<AbstractSyntaxTree> = Vec::new();
+        let mut global_block = Block::new();
+        let mut statements = Vec::new();
         while TokenKind::EndOfFileToken != self.lexer.get_current_token().kind {
-            let ast = self.parse_expression()?;
-            asts.push(ast);
+            let statement = self.parse_expression(&mut global_block)?;
+            statements.push(Box::new(statement));
         }
-        Ok(asts)
+        global_block.statements = statements;
+        Ok(Rc::new(global_block))
     }
 
-    pub fn parse_expression(&self) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.parse_assignment_expression()
+    fn match_token(&self, kind: TokenKind) -> Rc<Token> {
+        let current_token = self.lexer.get_current_token();
+        if kind == current_token.kind {
+            self.lexer.advance();
+            return current_token;
+        } else {
+            // add diagnostics
+            return Rc::new(Token::new(
+                TokenKind::FactoryToken,
+                current_token.line,
+                current_token.column,
+            ));
+        }
     }
 
-    fn parse_assignment_expression(&self) -> Result<AbstractSyntaxTree, CompilerError> {
+    fn parse_block(&self, parent: Rc<Block>) -> Result<Rc<Block>, CompilerError> {
+        self.match_token(TokenKind::SymbolToken(OpenCurlyBracket));
+        let mut block = Block::from(parent);
+        let mut statements: Vec<Box<AbstractSyntaxTree>> = Vec::new();
+        while TokenKind::SymbolToken(CloseCurlyBracket) != self.lexer.get_current_token().kind
+            && TokenKind::EndOfFileToken != self.lexer.get_current_token().kind
+        {
+            let statement = self.parse_expression(&mut block)?;
+            statements.push(Box::new(statement));
+        }
+        self.match_token(TokenKind::SymbolToken(CloseCurlyBracket));
+        block.statements = statements;
+        Ok(Rc::new(block))
+    }
+
+    pub fn parse_expression(&self, block: &mut Block) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.parse_assignment_expression(block)
+    }
+
+    fn parse_assignment_expression(
+        &self,
+        block: &mut Block,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
         match &identifier_token.kind {
             TokenKind::KeywordToken(keyword) => match keyword {
-                Keyword::Mutable => self.handle_mutable_keyword(),
-                _ => self.parse_arithmetic_expression(0),
+                Keyword::Mutable => self.handle_mutable_keyword(block),
+                _ => self.parse_arithmetic_expression(0, block),
             },
             TokenKind::IdentifierToken(name) => {
                 if let Some((operator, length)) = self.match_operator(1) {
@@ -52,21 +90,21 @@ impl Parser {
                         for _ in 0..length {
                             self.lexer.advance();
                         }
-                        let expression = self.parse_assignment_expression()?;
+                        let expression = self.parse_assignment_expression(block)?;
 
                         Ok(AbstractSyntaxTree::AssignmentExpression(
-                            Box::new(AbstractSyntaxTree::IdentifierExpression(name.to_string())),
+                            name.to_string(),
                             operator,
                             Box::new(expression),
                         ))
                     } else {
-                        self.parse_arithmetic_expression(0)
+                        self.parse_arithmetic_expression(0, block)
                     }
                 } else {
-                    self.parse_arithmetic_expression(0)
+                    self.parse_arithmetic_expression(0, block)
                 }
             }
-            _ => self.parse_arithmetic_expression(0),
+            _ => self.parse_arithmetic_expression(0, block),
             // TokenKind::LiteralToken(_) => todo!(),
             // TokenKind::WhitespaceToken(_) => todo!(),
             // TokenKind::NewLineToken => todo!(),
@@ -79,18 +117,19 @@ impl Parser {
     fn parse_arithmetic_expression(
         &self,
         parent_precedence: u8,
+        block: &mut Block,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let mut left = if let Some((operator, _)) = self.match_operator(0) {
             if operator.get_unery_precedence() >= parent_precedence {
                 self.lexer.advance();
                 let expression =
-                    self.parse_arithmetic_expression(operator.get_unery_precedence())?;
+                    self.parse_arithmetic_expression(operator.get_unery_precedence(), block)?;
                 AbstractSyntaxTree::UnaryExpression(operator, Box::new(expression))
             } else {
-                self.parse_factor()?
+                self.parse_factor(block)?
             }
         } else {
-            self.parse_factor()?
+            self.parse_factor(block)?
         };
 
         while let Some((operator, length)) = self.match_operator(0) {
@@ -101,22 +140,20 @@ impl Parser {
             for _ in 0..length {
                 self.lexer.advance();
             }
-            let right = self.parse_arithmetic_expression(precedence)?;
+            let right = self.parse_arithmetic_expression(precedence, block)?;
             left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
         }
 
         Ok(left)
     }
 
-    fn parse_factor(&self) -> Result<AbstractSyntaxTree, CompilerError> {
+    fn parse_factor(&self, block: &mut Block) -> Result<AbstractSyntaxTree, CompilerError> {
         let token = self.lexer.get_current_token_and_advance();
         match &token.kind {
-            TokenKind::LiteralToken(variable) => {
-                Ok(AbstractSyntaxTree::LiteralExpression(variable.clone()))
-            }
+            TokenKind::LiteralToken(variable) => Ok(AbstractSyntaxTree::Literal(variable.clone())),
             TokenKind::SymbolToken(symbol) => match symbol {
                 OpenParanthesis => {
-                    let expression = self.parse_expression()?;
+                    let expression = self.parse_expression(block)?;
                     let next_token = self.lexer.get_current_token_and_advance();
                     if next_token.kind == TokenKind::SymbolToken(CloseParanthesis) {
                         Ok(AbstractSyntaxTree::ParenthesizedExpression(Box::new(
@@ -137,9 +174,7 @@ impl Parser {
                 )),
                 _ => todo!("parse_factor"),
             },
-            TokenKind::IdentifierToken(name) => {
-                Ok(AbstractSyntaxTree::IdentifierExpression(name.clone()))
-            }
+            TokenKind::IdentifierToken(name) => Ok(AbstractSyntaxTree::Identifier(name.clone())),
             kind => Err(CompilerError::UnexpectedToken(
                 kind.clone(),
                 token.line,
@@ -148,21 +183,26 @@ impl Parser {
         }
     }
 
-    fn handle_mutable_keyword(&self) -> Result<AbstractSyntaxTree, CompilerError> {
+    fn handle_mutable_keyword(
+        &self,
+        block: &mut Block,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
             if let Some((operator, length)) = self.match_operator(2) {
                 // `mutable` variable_name operator expression
                 for _ in 0..length {
                     self.lexer.advance();
                 }
-                let expression = self.parse_assignment_expression()?;
-                handle_mutable_assignment(variable_name, operator, expression)
+                let expression = self.parse_assignment_expression(block)?;
+                handle_mutable_assignment(variable_name, operator, expression, block)
             } else {
                 // `mutable` variable_name
-                if SymbolTable::contains(variable_name) {
+                if block.contains_symbol(variable_name) {
                     return Err(CompilerError::CannotConvertFromImmutableToMutable);
                 } else {
-                    Err(CompilerError::NullAssignmentOfNonNullableVariable)
+                    Err(CompilerError::UnInitializedVariable(
+                        variable_name.to_string(),
+                    ))
                 }
             }
         } else {
@@ -393,18 +433,19 @@ fn handle_mutable_assignment(
     variable_name: &String,
     operator: Operator,
     expression: AbstractSyntaxTree,
+    block: &mut Block,
 ) -> Result<AbstractSyntaxTree, CompilerError> {
     match operator {
         AssignmentOperator(SimpleAssignment) => {
-            if SymbolTable::contains(variable_name) {
-                let old_variable = SymbolTable::get(variable_name).unwrap();
+            if block.contains_symbol(variable_name) {
+                let old_variable = block.get_symbol(variable_name).unwrap();
                 if old_variable.is_mutable() {
                     // `mutable` variable_name = old_expression
                     // `mutable` variable_name = new_expression
                     // TODO: add diagnostics. saying
                     // you don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever
                     Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
-                    SymbolTable::add(
+                    block.add_symbol(
                         variable_name.to_string(),
                         Variable::new_mutable(DataType::InternalUndefined),
                     );
@@ -415,29 +456,27 @@ fn handle_mutable_assignment(
                 }
             } else {
                 // `mutable` variable_name = expression
-                SymbolTable::add(
+                block.add_symbol(
                     variable_name.to_string(),
                     Variable::new_mutable(DataType::InternalUndefined),
                 );
             }
 
             Ok(AbstractSyntaxTree::AssignmentExpression(
-                Box::new(AbstractSyntaxTree::IdentifierExpression(
-                    variable_name.to_string(),
-                )),
+                variable_name.to_string(),
                 operator,
                 Box::new(expression),
             ))
         }
         // mutable a += 10
         AssignmentOperator(_) => {
-            if SymbolTable::contains(variable_name) {
-                let old_variable = SymbolTable::get(variable_name).unwrap();
+            if block.contains_symbol(variable_name) {
+                let old_variable = block.get_symbol(variable_name).unwrap();
                 if old_variable.is_mutable() {
                     // `mutable` variable_name operator old_expression
                     // `mutable` variable_name assignment_operator new expression
                     Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
-                    SymbolTable::add(
+                    block.add_symbol(
                         variable_name.to_string(),
                         Variable::new_mutable(DataType::InternalUndefined),
                     );
@@ -446,17 +485,15 @@ fn handle_mutable_assignment(
                     // `mutable` variable_name assignment_operator new expression
                     return Err(CompilerError::CannotConvertFromImmutableToMutable);
                 }
-                SymbolTable::add(
+                block.add_symbol(
                     variable_name.to_string(),
-                    Variable::new_mutable(SymbolTable::get(variable_name).unwrap().value),
+                    Variable::new_mutable(block.get_symbol(variable_name).unwrap().value),
                 );
             } else {
                 return Err(CompilerError::UndefinedVariable(variable_name.to_string()));
             }
             Ok(AbstractSyntaxTree::AssignmentExpression(
-                Box::new(AbstractSyntaxTree::IdentifierExpression(
-                    variable_name.to_string(),
-                )),
+                variable_name.to_string(),
                 operator,
                 Box::new(expression),
             ))

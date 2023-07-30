@@ -1,7 +1,6 @@
 a = 10
 b = 20
-mutable a = 'JK'
-mutable b = 22
-mutable count = 0
 
-count += 1
+
+c = a + b
+

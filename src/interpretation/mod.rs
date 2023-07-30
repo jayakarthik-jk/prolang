@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::common::errors::CompilerError;
 use crate::evaluator::Evaluator;
 use crate::lexical_analysis::lexer::Lexer;
@@ -11,17 +13,16 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
 
     let mut parser = Parser::new(lexer);
 
-    let asts = parser.parse()?;
+    let global_block = parser.parse()?;
 
-    for ast in asts {
-        let binder = Binder::new(ast);
-
-        let semantic_tree = binder.bind()?;
-
-        let evaluator = Evaluator::new(semantic_tree);
-
+    for statement in global_block.statements.iter() {
+        let binder = Binder::new(statement, Rc::clone(&global_block));
+        let binded_statement = binder.bind()?;
+        let evaluator = Evaluator::new(&binded_statement, Rc::clone(&global_block));
         evaluator.evaluate()?;
     }
+
+    global_block.print();
 
     Ok(())
 }

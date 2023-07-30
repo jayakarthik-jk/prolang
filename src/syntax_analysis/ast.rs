@@ -1,16 +1,23 @@
 use std::fmt::Display;
+use std::rc::Rc;
 
 use crate::common::{datatypes::Variable, operators::Operator};
 
-#[derive(Debug, PartialEq)]
+use super::block::Block;
+
+#[derive(Debug)]
 pub enum AbstractSyntaxTree {
-    LiteralExpression(Variable),
-    IdentifierExpression(String),
+    // Factors
+    Literal(Variable),
+    Identifier(String),
+    // Statements
     UnaryExpression(Operator, Box<AbstractSyntaxTree>),
     BinaryExpression(Box<AbstractSyntaxTree>, Operator, Box<AbstractSyntaxTree>),
     ParenthesizedExpression(Box<AbstractSyntaxTree>),
-    /// indentifer, assignment operator, expression
-    AssignmentExpression(Box<AbstractSyntaxTree>, Operator, Box<AbstractSyntaxTree>),
+    AssignmentExpression(String, Operator, Box<AbstractSyntaxTree>),
+
+    // statement
+    BlockStatement(Rc<Block>),
 }
 
 impl AbstractSyntaxTree {
@@ -28,7 +35,7 @@ impl AbstractSyntaxTree {
                 AbstractSyntaxTree::print_tree(left, indent + 3);
                 AbstractSyntaxTree::print_tree(right, indent + 3);
             }
-            AbstractSyntaxTree::LiteralExpression(value) => {
+            AbstractSyntaxTree::Literal(value) => {
                 println!("{}└─{}", " ".repeat(indent), value);
             }
             AbstractSyntaxTree::AssignmentExpression(identifier, equals, expression) => {
@@ -40,8 +47,14 @@ impl AbstractSyntaxTree {
                 println!("{}└─<( )>", " ".repeat(indent));
                 AbstractSyntaxTree::print_tree(expression, indent + 4);
             }
-            AbstractSyntaxTree::IdentifierExpression(name) => {
+            AbstractSyntaxTree::Identifier(name) => {
                 println!("{}└─{}", " ".repeat(indent), name);
+            }
+            AbstractSyntaxTree::BlockStatement(block) => {
+                println!("{}└─<block>", " ".repeat(indent));
+                for statement in block.statements.iter() {
+                    AbstractSyntaxTree::print_tree(statement, indent + 4);
+                }
             }
         }
     }
@@ -56,15 +69,18 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
                 write!(f, "{} {} {}", left, operator, right)
             }
-            AbstractSyntaxTree::LiteralExpression(value) => write!(f, "{}", value),
+            AbstractSyntaxTree::Literal(value) => write!(f, "{}", value),
             AbstractSyntaxTree::AssignmentExpression(identifier, equals, expression) => {
                 write!(f, "{} {} {}", identifier, equals, expression)
             }
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
                 write!(f, "( {} )", expression)
             }
-            AbstractSyntaxTree::IdentifierExpression(name) => {
+            AbstractSyntaxTree::Identifier(name) => {
                 write!(f, "{}", name)
+            }
+            AbstractSyntaxTree::BlockStatement(_) => {
+                write!(f, "")
             }
         }
     }

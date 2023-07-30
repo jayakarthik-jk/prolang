@@ -1,5 +1,4 @@
 use prolang::common::diagnostics::Diagnostics;
-use prolang::common::symbol_table::SymbolTable;
 use prolang::interpretation::interpretate;
 
 use std::io::stdin;
@@ -14,6 +13,10 @@ fn main() {
     stdin.read_line(&mut input).unwrap();
 
     if let std::cmp::Ordering::Equal = input.trim().cmp(&"file".to_string()) {
+        file_mode();
+        return;
+    }
+    if let std::cmp::Ordering::Equal = input.trim().cmp(&"".to_string()) {
         file_mode();
         return;
     }
@@ -44,17 +47,10 @@ fn console_mode() {
             println!("{}[2J", 27 as char);
             continue;
         }
-        if let std::cmp::Ordering::Equal = input.trim().cmp(&"clear_table".to_string()) {
-            // clear the symbol table
-            SymbolTable::clear();
-            continue;
-        }
 
         if let Err(error) = interpretate(input) {
             println!("{}", error);
         }
-        println!("\nSymbol Table:\n");
-        SymbolTable::print();
         Diagnostics::read_errors().iter().for_each(|error| {
             println!("{}", error);
         });
@@ -65,7 +61,6 @@ fn file_mode() {
     use std::fs::read_to_string;
 
     let file_name = "app.prolang";
-
     let input = match read_to_string(file_name) {
         Ok(input) => input,
         Err(error) => {
@@ -76,9 +71,6 @@ fn file_mode() {
 
     if let Err(error) = interpretate(input) {
         println!("{}", error);
-    } else {
-        println!("\nSymbol Table:\n");
-        SymbolTable::print();
     }
     Diagnostics::read_errors().iter().for_each(|error| {
         println!("{}", error);

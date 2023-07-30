@@ -20,10 +20,9 @@ pub enum CompilerError {
 
     // Syntax Errors
     UnexpectedToken(TokenKind, usize, usize),
-    NullAssignmentOfNonNullableVariable,
     InvalidOperationAsAssignmentOperation,
-    InvalidUseOfNullableKeyword,
     CannotConvertFromImmutableToMutable,
+    UnInitializedVariable(String),
 
     // Evaluation Errors
     InvalidOperatorForBinaryOperation(Operator),
@@ -97,19 +96,14 @@ impl Display for CompilerError {
             CompilerError::ImmutableVariable(name) => {
                 format!("cannot mutate Immutable variable '{}'", name)
             }
-            CompilerError::NullAssignmentOfNonNullableVariable => {
-                "Cannot assign null to a non-nullable variable".to_string()
-            }
             CompilerError::InvalidOperationAsAssignmentOperation => {
                 "Invalid operation as assignment operation".to_string()
-            }
-            CompilerError::InvalidUseOfNullableKeyword => {
-                "Invalid use of `nullable` keyword".to_string()
             }
             CompilerError::CannotConvertFromImmutableToMutable => {
                 "Cannot convert from Immutable to Mutable".to_string()
             }
             CompilerError::Warnings(warning) => warning.to_string(),
+            CompilerError::UnInitializedVariable(name) => format!("Uninitialized variable {name}"),
         };
         write!(f, "{}", text.red())
     }

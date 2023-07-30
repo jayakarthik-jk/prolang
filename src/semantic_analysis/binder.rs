@@ -1,74 +1,98 @@
-use crate::common::datatypes::{Variable, DataType};
+use std::rc::Rc;
+
+use crate::common::datatypes::{DataType, Variable};
 use crate::common::errors::CompilerError;
 use crate::common::operators::Operator;
-use crate::common::symbol_table::SymbolTable;
-use crate::semantic_analysis::semantic_tree::SemanticTree;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
+use crate::syntax_analysis::block::Block;
 
-pub struct Binder {
-    root: Box<AbstractSyntaxTree>,
+pub struct Binder<'a> {
+    statement: &'a Box<AbstractSyntaxTree>,
+    global_block: Rc<Block>,
     pub display_process: bool,
 }
 
-impl Binder {
-    pub fn new(root: AbstractSyntaxTree) -> Self {
+impl<'a> Binder<'a> {
+    pub fn new(statement: &'a Box<AbstractSyntaxTree>, global_block: Rc<Block>) -> Self {
         Self {
-            root: Box::new(root),
             display_process: false,
+            statement,
+            global_block,
         }
     }
 
-    pub fn bind(&self) -> Result<SemanticTree, CompilerError> {
-        self.bind_expression(&self.root)
+    pub fn bind(&self) -> Result<Box<AbstractSyntaxTree>, CompilerError> {
+        let bound_statement = self.bind_statement(self.statement, Rc::clone(&self.global_block))?;
+        Ok(Box::new(bound_statement))
     }
 
-    fn bind_expression(
+    fn bind_block(&self, block: Rc<Block>) -> Result<Rc<Block>, CompilerError> {
+        let mut bound_block = Block::new();
+        let mut statements = Vec::new();
+        for statement in block.statements.iter() {
+            let statement = self.bind_statement(statement, Rc::clone(&block))?;
+            statements.push(Box::new(statement));
+        }
+        bound_block.statements = statements;
+        Ok(Rc::new(bound_block))
+    }
+
+    fn bind_statement(
         &self,
         expression: &Box<AbstractSyntaxTree>,
-    ) -> Result<SemanticTree, CompilerError> {
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
             println!("binding expression: {}", expression);
         }
         match expression.as_ref() {
-            AbstractSyntaxTree::LiteralExpression(token) => self.bind_literal_expression(token),
-            AbstractSyntaxTree::IdentifierExpression(name) => {
-                self.bind_identifier_expression(name.to_string())
+            AbstractSyntaxTree::Literal(token) => self.bind_literal_statement(token, block),
+            AbstractSyntaxTree::Identifier(name) => {
+                self.bind_identifier_statement(name.to_string(), block)
             }
             AbstractSyntaxTree::UnaryExpression(operator_token, expression) => {
-                self.bind_unary_expression(operator_token, expression)
+                self.bind_unary_expression(operator_token, expression, block)
             }
             AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
-                self.bind_binary_expression(left, operator, right)
+                self.bind_binary_expression(left, operator, right, block)
             }
             AbstractSyntaxTree::AssignmentExpression(
                 identifier_expression,
                 operator,
                 expression,
-            ) => self.bind_assignment_expression(identifier_expression, operator, expression),
-            AbstractSyntaxTree::ParenthesizedExpression(expression) => {
-                self.bind_parenthesized_expression(expression)
+            ) => {
+                self.bind_assignment_expression(identifier_expression, operator, expression, block)
             }
+            AbstractSyntaxTree::ParenthesizedExpression(expression) => {
+                self.bind_parenthesized_expression(expression, block)
+            }
+            AbstractSyntaxTree::BlockStatement(block) => Ok(AbstractSyntaxTree::BlockStatement(
+                self.bind_block(Rc::clone(block))?,
+            )),
         }
     }
 
-    fn bind_literal_expression(&self, variable: &Variable) -> Result<SemanticTree, CompilerError> {
+    fn bind_literal_statement(
+        &self,
+        variable: &Variable,
+        _: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
             println!("binding literal: {}", variable);
         }
-        Ok(SemanticTree::LiteralExpression(variable.clone()))
+        Ok(AbstractSyntaxTree::Literal(variable.clone()))
     }
 
-    fn bind_identifier_expression(&self, name: String) -> Result<SemanticTree, CompilerError> {
+    fn bind_identifier_statement(
+        &self,
+        name: String,
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
             println!("binding identifier: {}", name);
         }
-
-        if let Some(variable) = SymbolTable::get(&name) {
-            if variable.value == DataType::InternalUndefined {
-                Ok(SemanticTree::IdentifierExpression(name))
-            } else {
-                Err(CompilerError::UndefinedVariable(name))
-            }
+        if block.contains_symbol(&name) {
+            Ok(AbstractSyntaxTree::Identifier(name))
         } else {
             Err(CompilerError::UndefinedVariable(name))
         }
@@ -77,13 +101,14 @@ impl Binder {
         &self,
         operator: &Operator,
         expression: &Box<AbstractSyntaxTree>,
-    ) -> Result<SemanticTree, CompilerError> {
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
             println!("binding unary: {} {}", operator, expression);
         }
-        let expression = self.bind_expression(expression)?;
+        let expression = self.bind_statement(expression, block)?;
 
-        Ok(SemanticTree::UnaryExpression(
+        Ok(AbstractSyntaxTree::UnaryExpression(
             operator.clone(),
             Box::new(expression),
         ))
@@ -94,14 +119,15 @@ impl Binder {
         left: &Box<AbstractSyntaxTree>,
         operator: &Operator,
         right: &Box<AbstractSyntaxTree>,
-    ) -> Result<SemanticTree, CompilerError> {
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
             println!("binding binary: {} {} {}", left, operator, right);
         }
-        let left = self.bind_expression(left)?;
-        let right = self.bind_expression(right)?;
+        let left = self.bind_statement(left, Rc::clone(&block))?;
+        let right = self.bind_statement(right, Rc::clone(&block))?;
 
-        Ok(SemanticTree::BinaryExpression(
+        Ok(AbstractSyntaxTree::BinaryExpression(
             Box::new(left),
             operator.clone(),
             Box::new(right),
@@ -110,34 +136,28 @@ impl Binder {
 
     fn bind_assignment_expression(
         &self,
-        identifier_expression: &Box<AbstractSyntaxTree>,
+        name: &String,
         operator: &Operator,
         expression: &Box<AbstractSyntaxTree>,
-    ) -> Result<SemanticTree, CompilerError> {
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         if self.display_process {
-            println!(
-                "binding assignment: {} {} {}",
-                identifier_expression, operator, expression
-            );
+            println!("binding assignment: {} {} {}", name, operator, expression);
         }
-        let expression = self.bind_expression(expression)?;
+        let expression = self.bind_statement(expression, block)?;
 
-        match identifier_expression.as_ref() {
-            AbstractSyntaxTree::IdentifierExpression(name) => {
-                Ok(SemanticTree::AssignmentExpression(
-                    name.clone(),
-                    operator.clone(),
-                    Box::new(expression),
-                ))
-            }
-            _ => Err(CompilerError::InvalidExpressionAssignment),
-        }
+        Ok(AbstractSyntaxTree::AssignmentExpression(
+            name.clone(),
+            operator.clone(),
+            Box::new(expression),
+        ))
     }
 
     fn bind_parenthesized_expression(
         &self,
         expression: &Box<AbstractSyntaxTree>,
-    ) -> Result<SemanticTree, CompilerError> {
-        self.bind_expression(expression)
+        block: Rc<Block>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.bind_statement(expression, block)
     }
 }
