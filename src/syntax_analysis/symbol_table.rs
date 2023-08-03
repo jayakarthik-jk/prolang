@@ -1,5 +1,5 @@
 use crate::common::datatypes::Variable;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Default)]
 pub struct SymbolTable {
@@ -32,11 +32,19 @@ impl SymbolTable {
     pub fn clear(&mut self) {
         self.table.clear();
     }
+}
 
-    pub fn print(&self) {
-        let iterator = self.table.iter();
-        for (name, value) in iterator {
-            println!("{}: {}, mutable {}", name, value, value.is_mutable(),);
+impl Display for SymbolTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut print_str = String::new();
+        for (name, value) in self.table.iter() {
+            print_str.push_str(&format!(
+                "{}: {}, mutable {}",
+                name,
+                value,
+                value.is_mutable(),
+            ));
         }
+        write!(f, "{}", print_str)
     }
 }

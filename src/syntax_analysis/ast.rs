@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use std::rc::Rc;
+use std::{cell::RefCell, fmt::Display};
 
 use crate::common::{datatypes::Variable, operators::Operator};
 
@@ -17,7 +17,7 @@ pub enum AbstractSyntaxTree {
     AssignmentExpression(String, Operator, Box<AbstractSyntaxTree>),
 
     // statement
-    BlockStatement(Rc<Block>),
+    BlockStatement(Rc<RefCell<Block>>),
 }
 
 impl AbstractSyntaxTree {
@@ -52,7 +52,7 @@ impl AbstractSyntaxTree {
             }
             AbstractSyntaxTree::BlockStatement(block) => {
                 println!("{}└─<block>", " ".repeat(indent));
-                for statement in block.statements.iter() {
+                for statement in block.borrow().statements.iter() {
                     AbstractSyntaxTree::print_tree(statement, indent + 4);
                 }
             }
@@ -79,8 +79,8 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::Identifier(name) => {
                 write!(f, "{}", name)
             }
-            AbstractSyntaxTree::BlockStatement(_) => {
-                write!(f, "")
+            AbstractSyntaxTree::BlockStatement(block) => {
+                write!(f, "{:?}", block.borrow().statements)
             }
         }
     }

@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::datatypes::{DataType, Variable};
@@ -26,18 +27,19 @@ impl Parser {
         Self { lexer }
     }
 
-    pub fn parse(&mut self) -> Result<Rc<Block>, CompilerError> {
+    pub fn parse(&mut self) -> Result<Rc<RefCell<Block>>, CompilerError> {
         if self.lexer.get_token_count() == 0 {
             self.lexer.lex()?;
         }
-        let mut global_block = Block::new();
-        let mut statements = Vec::new();
+        let global_block = Rc::new(RefCell::new(Block::new()));
         while TokenKind::EndOfFileToken != self.lexer.get_current_token().kind {
-            let statement = self.parse_expression(&mut global_block)?;
-            statements.push(Box::new(statement));
+            let statement = self.parse_statement(Rc::clone(&global_block))?;
+            global_block
+                .borrow_mut()
+                .statements
+                .push(Box::new(statement));
         }
-        global_block.statements = statements;
-        Ok(Rc::new(global_block))
+        Ok(global_block)
     }
 
     fn match_token(&self, kind: TokenKind) -> Rc<Token> {
@@ -55,28 +57,56 @@ impl Parser {
         }
     }
 
-    fn parse_block(&self, parent: Rc<Block>) -> Result<Rc<Block>, CompilerError> {
+    fn parse_block(&self, parent: Rc<RefCell<Block>>) -> Result<AbstractSyntaxTree, CompilerError> {
         self.match_token(TokenKind::SymbolToken(OpenCurlyBracket));
-        let mut block = Block::from(parent);
-        let mut statements: Vec<Box<AbstractSyntaxTree>> = Vec::new();
+        let block = Rc::new(RefCell::new(Block::from(parent)));
         while TokenKind::SymbolToken(CloseCurlyBracket) != self.lexer.get_current_token().kind
             && TokenKind::EndOfFileToken != self.lexer.get_current_token().kind
         {
-            let statement = self.parse_expression(&mut block)?;
-            statements.push(Box::new(statement));
+            let statement = self.parse_statement(Rc::clone(&block))?;
+            block.borrow_mut().statements.push(Box::new(statement));
         }
         self.match_token(TokenKind::SymbolToken(CloseCurlyBracket));
-        block.statements = statements;
-        Ok(Rc::new(block))
+        Ok(AbstractSyntaxTree::BlockStatement(block))
     }
 
-    pub fn parse_expression(&self, block: &mut Block) -> Result<AbstractSyntaxTree, CompilerError> {
+    fn parse_statement(
+        &self,
+        block: Rc<RefCell<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let token = self.lexer.get_current_token();
+        match &token.kind {
+            // TokenKind::KeywordToken(keyword) => match keyword {
+            //     Keyword::If => self.parse_if_statement(block),
+            //     Keyword::While => self.parse_while_statement(block),
+            //     Keyword::For => self.parse_for_statement(block),
+            //     Keyword::Return => self.parse_return_statement(block),
+            //     Keyword::Break => self.parse_break_statement(block),
+            //     Keyword::Continue => self.parse_continue_statement(block),
+            //     Keyword::Mutable => self.parse_mutable_statement(block),
+            //     Keyword::Immutable => self.parse_immutable_statement(block),
+            //     Keyword::Function => self.parse_function_statement(block),
+            //     Keyword::Struct => self.parse_struct_statement(block),
+            //     Keyword::Enum => self.parse_enum_statement(block),
+            //     Keyword::Impl => self.parse_impl_statement(block),
+            //     Keyword::Use => self.parse_use_statement(block),
+            //     _ => self.parse_expression(block),
+            // },
+            TokenKind::SymbolToken(OpenCurlyBracket) => self.parse_block(block),
+            _ => self.parse_expression(block),
+        }
+    }
+
+    fn parse_expression(
+        &self,
+        block: Rc<RefCell<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.parse_assignment_expression(block)
     }
 
     fn parse_assignment_expression(
         &self,
-        block: &mut Block,
+        block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
         match &identifier_token.kind {
@@ -87,7 +117,7 @@ impl Parser {
                         for _ in 0..length {
                             self.lexer.advance();
                         }
-                        let expression = self.parse_assignment_expression(block)?;
+                        let expression = self.parse_statement(block)?;
 
                         Ok(AbstractSyntaxTree::AssignmentExpression(
                             name.to_string(),
@@ -114,19 +144,21 @@ impl Parser {
     fn parse_arithmetic_expression(
         &self,
         parent_precedence: u8,
-        block: &mut Block,
+        block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let mut left = if let Some((operator, _)) = self.match_operator(0) {
             if operator.get_unery_precedence() >= parent_precedence {
                 self.lexer.advance();
-                let expression =
-                    self.parse_arithmetic_expression(operator.get_unery_precedence(), block)?;
+                let expression = self.parse_arithmetic_expression(
+                    operator.get_unery_precedence(),
+                    Rc::clone(&block),
+                )?;
                 AbstractSyntaxTree::UnaryExpression(operator, Box::new(expression))
             } else {
-                self.parse_factor(block)?
+                self.parse_factor(Rc::clone(&block))?
             }
         } else {
-            self.parse_factor(block)?
+            self.parse_factor(Rc::clone(&block))?
         };
 
         while let Some((operator, length)) = self.match_operator(0) {
@@ -137,14 +169,14 @@ impl Parser {
             for _ in 0..length {
                 self.lexer.advance();
             }
-            let right = self.parse_arithmetic_expression(precedence, block)?;
+            let right = self.parse_arithmetic_expression(precedence, Rc::clone(&block))?;
             left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
         }
 
         Ok(left)
     }
 
-    fn parse_factor(&self, block: &mut Block) -> Result<AbstractSyntaxTree, CompilerError> {
+    fn parse_factor(&self, block: Rc<RefCell<Block>>) -> Result<AbstractSyntaxTree, CompilerError> {
         let token = self.lexer.get_current_token_and_advance();
         match &token.kind {
             TokenKind::LiteralToken(variable) => Ok(AbstractSyntaxTree::Literal(variable.clone())),
@@ -169,7 +201,11 @@ impl Parser {
                     token.line,
                     token.column,
                 )),
-                _ => todo!("parse_factor"),
+                symbol => Err(CompilerError::UnexpectedToken(
+                    TokenKind::SymbolToken(*symbol),
+                    token.line,
+                    token.column,
+                )),
             },
             TokenKind::IdentifierToken(name) => Ok(AbstractSyntaxTree::Identifier(name.clone())),
             kind => Err(CompilerError::UnexpectedToken(
@@ -182,7 +218,7 @@ impl Parser {
 
     fn handle_mutable_keyword(
         &self,
-        block: &mut Block,
+        block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         if let TokenKind::IdentifierToken(variable_name) = &self.lexer.peek(1).kind {
             if let Some((operator, length)) = self.match_operator(2) {
@@ -190,11 +226,11 @@ impl Parser {
                 for _ in 0..length {
                     self.lexer.advance();
                 }
-                let expression = self.parse_assignment_expression(block)?;
+                let expression = self.parse_assignment_expression(Rc::clone(&block))?;
                 handle_mutable_assignment(variable_name, operator, expression, block)
             } else {
                 // `mutable` variable_name
-                if block.contains_symbol(variable_name) {
+                if block.borrow().contains_symbol(variable_name) {
                     Err(CompilerError::CannotConvertFromImmutableToMutable)
                 } else {
                     Err(CompilerError::UnInitializedVariable(
@@ -430,8 +466,9 @@ fn handle_mutable_assignment(
     variable_name: &String,
     operator: Operator,
     expression: AbstractSyntaxTree,
-    block: &mut Block,
+    block: Rc<RefCell<Block>>,
 ) -> Result<AbstractSyntaxTree, CompilerError> {
+    let block = block.borrow();
     match operator {
         AssignmentOperator(SimpleAssignment) => {
             if block.contains_symbol(variable_name) {

@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::datatypes::DataType::Boolean;
@@ -13,12 +14,12 @@ use crate::syntax_analysis::ast::AbstractSyntaxTree;
 use crate::syntax_analysis::block::Block;
 
 pub struct Evaluator<'a> {
-    statement: &'a Box<AbstractSyntaxTree>,
-    global_block: Rc<Block>,
+    statement: &'a AbstractSyntaxTree,
+    global_block: Rc<RefCell<Block>>,
 }
 
 impl<'a> Evaluator<'a> {
-    pub fn new(statement: &'a Box<AbstractSyntaxTree>, global_block: Rc<Block>) -> Self {
+    pub fn new(statement: &'a AbstractSyntaxTree, global_block: Rc<RefCell<Block>>) -> Self {
         Self {
             statement,
             global_block,
@@ -31,10 +32,10 @@ impl<'a> Evaluator<'a> {
     }
 
     fn _evaluate(
-        statement: &Box<AbstractSyntaxTree>,
-        block: Rc<Block>,
+        statement: &AbstractSyntaxTree,
+        block: Rc<RefCell<Block>>,
     ) -> Result<Variable, CompilerError> {
-        match statement.as_ref() {
+        match statement {
             AbstractSyntaxTree::Literal(literal) => Ok(literal.clone()),
             AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
                 evaluate_binary_expression(left, block, right, operator)
@@ -42,37 +43,37 @@ impl<'a> Evaluator<'a> {
             AbstractSyntaxTree::UnaryExpression(operator, expression) => {
                 evaluate_unary_expression(operator, expression, block)
             }
-            AbstractSyntaxTree::Identifier(name) => match block.get_symbol(name) {
+            AbstractSyntaxTree::Identifier(name) => match block.borrow().get_symbol(name) {
                 Some(value) => Ok(value),
                 None => Err(CompilerError::UndefinedVariable(name.clone())),
             },
             AbstractSyntaxTree::AssignmentExpression(name, operator, expression) => {
-                evaluate_assignment_expression(expression, block, operator, name)
+                evaluate_assignment_expression(name, operator, expression, block)
             }
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
                 Evaluator::_evaluate(expression, block)
             }
-            AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Rc::clone(block)),
+            AbstractSyntaxTree::BlockStatement(b) => evaluate_block(Rc::clone(b)),
         }
     }
 }
 
-fn evaluate_block(block: Rc<Block>) -> Result<Variable, CompilerError> {
+fn evaluate_block(block: Rc<RefCell<Block>>) -> Result<Variable, CompilerError> {
     let mut result = Variable::new(Boolean(false));
-    for statement in block.statements.iter() {
+    for statement in block.borrow().statements.iter() {
         result = Evaluator::_evaluate(statement, Rc::clone(&block))?;
     }
     Ok(result)
 }
 
 fn evaluate_assignment_expression(
-    expression: &Box<AbstractSyntaxTree>,
-    block: Rc<Block>,
-    operator: &Operator,
     name: &String,
+    operator: &Operator,
+    expression: &AbstractSyntaxTree,
+    block: Rc<RefCell<Block>>,
 ) -> Result<Variable, CompilerError> {
     let right_hand = Evaluator::_evaluate(expression, Rc::clone(&block))?;
-
+    let block = block.borrow();
     match operator {
         Operator::AssignmentOperator(assigmnent) => match assigmnent {
             Assingment::SimpleAssignment => {
@@ -107,8 +108,8 @@ fn evaluate_assignment_expression(
 
 fn evaluate_unary_expression(
     operator: &Operator,
-    expression: &Box<AbstractSyntaxTree>,
-    block: Rc<Block>,
+    expression: &AbstractSyntaxTree,
+    block: Rc<RefCell<Block>>,
 ) -> Result<Variable, CompilerError> {
     match operator {
         ArithmeticOperator(operator) => match operator {
@@ -131,9 +132,9 @@ fn evaluate_unary_expression(
 }
 
 fn evaluate_binary_expression(
-    left: &Box<AbstractSyntaxTree>,
-    block: Rc<Block>,
-    right: &Box<AbstractSyntaxTree>,
+    left: &AbstractSyntaxTree,
+    block: Rc<RefCell<Block>>,
+    right: &AbstractSyntaxTree,
     operator: &Operator,
 ) -> Result<Variable, CompilerError> {
     let left = Evaluator::_evaluate(left, Rc::clone(&block))?;

@@ -85,34 +85,9 @@ else loop until a < 100 {
 
 ## function declaration
 
-`note: `
-
-### functions are in beta. the api may change in future. ofcourse, the entire language is in beta.
-
 ```
-function add(a, b) {
-    return a + b
-}
-```
-
-### If the last statement of a function is an expression, it is implicitly returned
-
-inspired by rust
-
-```
-function add(a, b) {
+add = (a, b) => {
     a + b
 }
 ```
-
-## functions are first class citizens
-
-inspired by javascript
-
-```
-add = function(a, b) {
-    a + b
-}
-
-sum = add(1, 2)
-```
+`note: ` by default functions return the last expression
