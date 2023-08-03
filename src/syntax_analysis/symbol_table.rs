@@ -39,7 +39,7 @@ impl Display for SymbolTable {
         let mut print_str = String::new();
         for (name, value) in self.table.iter() {
             print_str.push_str(&format!(
-                "{}: {}, mutable {}",
+                "\n{}: {}, mutable {}",
                 name,
                 value,
                 value.is_mutable(),

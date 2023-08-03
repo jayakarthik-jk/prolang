@@ -48,7 +48,12 @@ impl Parser {
             self.lexer.advance();
             current_token
         } else {
-            // add diagnostics
+            Diagnostics::add_error(CompilerError::UnexpectedTokenWithExpected(
+                current_token.kind.clone(),
+                kind,
+                current_token.line,
+                current_token.column,
+            ));
             Rc::new(Token::new(
                 TokenKind::FactoryToken,
                 current_token.line,
@@ -75,26 +80,12 @@ impl Parser {
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let token = self.lexer.get_current_token();
-        match &token.kind {
-            // TokenKind::KeywordToken(keyword) => match keyword {
-            //     Keyword::If => self.parse_if_statement(block),
-            //     Keyword::While => self.parse_while_statement(block),
-            //     Keyword::For => self.parse_for_statement(block),
-            //     Keyword::Return => self.parse_return_statement(block),
-            //     Keyword::Break => self.parse_break_statement(block),
-            //     Keyword::Continue => self.parse_continue_statement(block),
-            //     Keyword::Mutable => self.parse_mutable_statement(block),
-            //     Keyword::Immutable => self.parse_immutable_statement(block),
-            //     Keyword::Function => self.parse_function_statement(block),
-            //     Keyword::Struct => self.parse_struct_statement(block),
-            //     Keyword::Enum => self.parse_enum_statement(block),
-            //     Keyword::Impl => self.parse_impl_statement(block),
-            //     Keyword::Use => self.parse_use_statement(block),
-            //     _ => self.parse_expression(block),
-            // },
+        let result = match &token.kind {
             TokenKind::SymbolToken(OpenCurlyBracket) => self.parse_block(block),
             _ => self.parse_expression(block),
-        }
+        };
+        // self.match_token(TokenKind::NewLineToken);
+        result
     }
 
     fn parse_expression(

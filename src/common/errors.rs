@@ -20,6 +20,7 @@ pub enum CompilerError {
 
     // Syntax Errors
     UnexpectedToken(TokenKind, usize, usize),
+    UnexpectedTokenWithExpected(TokenKind, TokenKind, usize, usize),
     InvalidOperationAsAssignmentOperation,
     CannotConvertFromImmutableToMutable,
     UnInitializedVariable(String),
@@ -104,6 +105,12 @@ impl Display for CompilerError {
             }
             CompilerError::Warnings(warning) => warning.to_string(),
             CompilerError::UnInitializedVariable(name) => format!("Uninitialized variable {name}"),
+            CompilerError::UnexpectedTokenWithExpected(unexpected, expected, line, column) => {
+                format!(
+                    "Unexpected token '{}' at line {}, column {}. Expected {}",
+                    unexpected, line, column, expected
+                )
+            }
         };
         write!(f, "{}", text.red())
     }
