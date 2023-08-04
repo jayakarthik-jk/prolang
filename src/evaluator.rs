@@ -53,8 +53,30 @@ impl<'a> Evaluator<'a> {
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
                 Evaluator::_evaluate(expression, block)
             }
-            AbstractSyntaxTree::BlockStatement(b) => evaluate_block(Rc::clone(b)),
+            AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Rc::clone(block)),
+            AbstractSyntaxTree::IfStatement(condition, if_block_or_statement, else_statement) => {
+                evaluate_if_statement(condition, if_block_or_statement, else_statement, block)
+            }
+            AbstractSyntaxTree::ElseStatement(if_or_block_statement) => {
+                Evaluator::_evaluate(if_or_block_statement, block)
+            }
         }
+    }
+}
+
+fn evaluate_if_statement(
+    condition: &AbstractSyntaxTree,
+    if_block_or_statement: &AbstractSyntaxTree,
+    else_statement: &Option<Box<AbstractSyntaxTree>>,
+    scope_block: Rc<RefCell<Block>>,
+) -> Result<Variable, CompilerError> {
+    let condition = Evaluator::_evaluate(condition, Rc::clone(&scope_block))?;
+    if condition.is_truthy() {
+        Evaluator::_evaluate(if_block_or_statement, Rc::clone(&scope_block))
+    } else if let Some(else_block) = else_statement {
+        Evaluator::_evaluate(else_block, scope_block)
+    } else {
+        Ok(Variable::new(Boolean(false)))
     }
 }
 

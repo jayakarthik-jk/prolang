@@ -13,7 +13,7 @@ use crate::common::operators::Operator::*;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::lexer::Lexer;
 use crate::lexical_analysis::symbols::Symbol::*;
-use crate::lexical_analysis::token::{Token, TokenKind};
+use crate::lexical_analysis::token::TokenKind;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
 use super::block::Block;
@@ -42,28 +42,32 @@ impl Parser {
         Ok(global_block)
     }
 
-    fn match_token(&self, kind: TokenKind) -> Rc<Token> {
-        let current_token = self.lexer.get_current_token();
-        if kind == current_token.kind {
-            self.lexer.advance();
-            current_token
-        } else {
-            Diagnostics::add_error(CompilerError::UnexpectedTokenWithExpected(
-                current_token.kind.clone(),
-                kind,
-                current_token.line,
-                current_token.column,
-            ));
-            Rc::new(Token::new(
-                TokenKind::FactoryToken,
-                current_token.line,
-                current_token.column,
-            ))
+    fn parse_statement(
+        &self,
+        block: Rc<RefCell<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let token = self.lexer.get_current_token();
+        match &token.kind {
+            TokenKind::SymbolToken(OpenCurlyBracket) => {
+                let block = self.parse_block(block)?;
+                Ok(AbstractSyntaxTree::BlockStatement(block))
+            }
+            TokenKind::KeywordToken(Keyword::If) => self.parse_if_statement(block),
+            _ => self.parse_expression(block),
         }
     }
 
-    fn parse_block(&self, parent: Rc<RefCell<Block>>) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.match_token(TokenKind::SymbolToken(OpenCurlyBracket));
+    fn parse_block(&self, parent: Rc<RefCell<Block>>) -> Result<Rc<RefCell<Block>>, CompilerError> {
+        if TokenKind::SymbolToken(OpenCurlyBracket)
+            != self.lexer.get_current_token_and_advance().kind
+        {
+            return Err(CompilerError::UnexpectedTokenWithExpected(
+                self.lexer.get_current_token().kind.clone(),
+                TokenKind::SymbolToken(OpenCurlyBracket),
+                self.lexer.get_current_token().line,
+                self.lexer.get_current_token().column,
+            ));
+        }
         let block = Rc::new(RefCell::new(Block::from(parent)));
         while TokenKind::SymbolToken(CloseCurlyBracket) != self.lexer.get_current_token().kind
             && TokenKind::EndOfFileToken != self.lexer.get_current_token().kind
@@ -71,21 +75,52 @@ impl Parser {
             let statement = self.parse_statement(Rc::clone(&block))?;
             block.borrow_mut().statements.push(Box::new(statement));
         }
-        self.match_token(TokenKind::SymbolToken(CloseCurlyBracket));
-        Ok(AbstractSyntaxTree::BlockStatement(block))
+        if TokenKind::SymbolToken(CloseCurlyBracket)
+            != self.lexer.get_current_token_and_advance().kind
+        {
+            return Err(CompilerError::UnexpectedTokenWithExpected(
+                self.lexer.get_current_token().kind.clone(),
+                TokenKind::SymbolToken(CloseCurlyBracket),
+                self.lexer.get_current_token().line,
+                self.lexer.get_current_token().column,
+            ));
+        }
+        Ok(block)
     }
 
-    fn parse_statement(
+    fn parse_if_statement(
         &self,
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let token = self.lexer.get_current_token();
-        let result = match &token.kind {
-            TokenKind::SymbolToken(OpenCurlyBracket) => self.parse_block(block),
-            _ => self.parse_expression(block),
-        };
-        // self.match_token(TokenKind::NewLineToken);
-        result
+        if TokenKind::KeywordToken(Keyword::If) != self.lexer.get_current_token_and_advance().kind {
+            return Err(CompilerError::UnexpectedTokenWithExpected(
+                self.lexer.get_current_token().kind.clone(),
+                TokenKind::KeywordToken(Keyword::If),
+                self.lexer.get_current_token().line,
+                self.lexer.get_current_token().column,
+            ));
+        }
+        let condition = self.parse_expression(Rc::clone(&block))?;
+        let if_block = self.parse_statement(Rc::clone(&block))?;
+        let else_block =
+            if TokenKind::KeywordToken(Keyword::Else) == self.lexer.get_current_token().kind {
+                self.lexer.advance();
+                Some(Box::new(self.parse_else_block(Rc::clone(&block))?))
+            } else {
+                None
+            };
+        Ok(AbstractSyntaxTree::IfStatement(
+            Box::new(condition),
+            Box::new(if_block),
+            else_block,
+        ))
+    }
+
+    fn parse_else_block(
+        &self,
+        block: Rc<RefCell<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.parse_statement(block)
     }
 
     fn parse_expression(
@@ -108,7 +143,7 @@ impl Parser {
                         for _ in 0..length {
                             self.lexer.advance();
                         }
-                        let expression = self.parse_statement(block)?;
+                        let expression = self.parse_expression(block)?;
 
                         Ok(AbstractSyntaxTree::AssignmentExpression(
                             name.to_string(),

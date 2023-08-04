@@ -16,6 +16,8 @@ pub enum Keyword {
     Xor,
     Is,
     Mutable,
+    If,
+    Else,
 }
 use self::Keyword::*;
 
@@ -30,6 +32,8 @@ impl Keyword {
             "not" => KeywordToken(Not),
             "xor" => KeywordToken(Xor),
             "mutable" => KeywordToken(Mutable),
+            "if" => KeywordToken(If),
+            "else" => KeywordToken(Else),
             identifier => IdentifierToken(identifier.to_string()),
         }
     }
@@ -46,6 +50,8 @@ impl Display for Keyword {
             Xor => "xor",
             Is => "is",
             Mutable => "mutable",
+            If => "if",
+            Else => "else",
         };
         write!(f, "{}", text)
     }

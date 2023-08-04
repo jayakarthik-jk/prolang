@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use crate::common::diagnostics::Diagnostics;
 use crate::common::errors::CompilerError;
 use crate::evaluator::Evaluator;
 use crate::lexical_analysis::lexer::Lexer;
@@ -18,11 +17,6 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
     for statement in global_block.borrow().statements.iter() {
         let evaluator = Evaluator::new(statement, Rc::clone(&global_block));
         evaluator.evaluate()?;
-    }
-
-    let errors = Diagnostics::read_errors();
-    for error in errors {
-        println!("{}", error);
     }
 
     println!("{}", global_block.borrow());

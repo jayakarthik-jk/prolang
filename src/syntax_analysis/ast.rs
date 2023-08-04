@@ -10,54 +10,20 @@ pub enum AbstractSyntaxTree {
     // Factors
     Literal(Variable),
     Identifier(String),
-    // Statements
+    // Expressions
     UnaryExpression(Operator, Box<AbstractSyntaxTree>),
     BinaryExpression(Box<AbstractSyntaxTree>, Operator, Box<AbstractSyntaxTree>),
     ParenthesizedExpression(Box<AbstractSyntaxTree>),
     AssignmentExpression(String, Operator, Box<AbstractSyntaxTree>),
 
-    // statement
+    // statements
     BlockStatement(Rc<RefCell<Block>>),
-}
-
-impl AbstractSyntaxTree {
-    pub fn print(node: &AbstractSyntaxTree) {
-        AbstractSyntaxTree::print_tree(node, 0);
-    }
-    fn print_tree(node: &AbstractSyntaxTree, indent: usize) {
-        match node {
-            AbstractSyntaxTree::UnaryExpression(operator, operand) => {
-                println!("{}├─{}", " ".repeat(indent), operator);
-                AbstractSyntaxTree::print_tree(operand, indent + 3);
-            }
-            AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
-                println!("{}├─{}", " ".repeat(indent), operator);
-                AbstractSyntaxTree::print_tree(left, indent + 3);
-                AbstractSyntaxTree::print_tree(right, indent + 3);
-            }
-            AbstractSyntaxTree::Literal(value) => {
-                println!("{}└─{}", " ".repeat(indent), value);
-            }
-            AbstractSyntaxTree::AssignmentExpression(identifier, equals, expression) => {
-                println!("{}├─{}", " ".repeat(indent), equals);
-                println!("{}   └─{}", " ".repeat(indent), identifier);
-                AbstractSyntaxTree::print_tree(expression, indent + 3);
-            }
-            AbstractSyntaxTree::ParenthesizedExpression(expression) => {
-                println!("{}└─<( )>", " ".repeat(indent));
-                AbstractSyntaxTree::print_tree(expression, indent + 4);
-            }
-            AbstractSyntaxTree::Identifier(name) => {
-                println!("{}└─{}", " ".repeat(indent), name);
-            }
-            AbstractSyntaxTree::BlockStatement(block) => {
-                println!("{}└─<block>", " ".repeat(indent));
-                for statement in block.borrow().statements.iter() {
-                    AbstractSyntaxTree::print_tree(statement, indent + 4);
-                }
-            }
-        }
-    }
+    IfStatement(
+        Box<AbstractSyntaxTree>,         // condition
+        Box<AbstractSyntaxTree>,         // if (block or statement)
+        Option<Box<AbstractSyntaxTree>>, // else (block or statement)
+    ),
+    ElseStatement(Box<AbstractSyntaxTree>),
 }
 
 impl Display for AbstractSyntaxTree {
@@ -76,12 +42,11 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
                 write!(f, "( {} )", expression)
             }
-            AbstractSyntaxTree::Identifier(name) => {
-                write!(f, "{}", name)
-            }
-            AbstractSyntaxTree::BlockStatement(block) => {
-                write!(f, "{:?}", block.borrow().statements)
-            }
+            AbstractSyntaxTree::Identifier(name) => write!(f, "{}", name),
+
+            AbstractSyntaxTree::BlockStatement(_) => write!(f, "{{ block }}"),
+            AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if (condition) {{ block }}"),
+            AbstractSyntaxTree::ElseStatement(_) => write!(f, "else {{ block }}"),
         }
     }
 }
