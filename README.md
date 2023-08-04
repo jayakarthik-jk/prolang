@@ -22,15 +22,19 @@ mutable is_gwen_alive = true
 
 ```
 
+a = 35
+mutable str = ""
+
 if a % 5 is 0 and a % 7 is 0 {
-    print("FizzBuzz")
+    str = "FizzBuzz"
+} else if a % 5 is 0 {
+    str = "Fizz"
+} else if a % 7 is 0 {
+    str = "Buzz"
+} else {
+    str = a
 }
-else if a % 5 is 0 {
-    print("Fizz")
-}
-else {
-    print("Buzz")
-}
+
 ```
 
 `note:` `is` and `is not` are identity operators similar to == and != respectively

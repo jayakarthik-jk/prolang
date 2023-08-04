@@ -18,6 +18,8 @@ pub enum Keyword {
     Mutable,
     If,
     Else,
+    Loop,
+    Until,
 }
 use self::Keyword::*;
 
@@ -34,6 +36,8 @@ impl Keyword {
             "mutable" => KeywordToken(Mutable),
             "if" => KeywordToken(If),
             "else" => KeywordToken(Else),
+            "loop" => KeywordToken(Loop),
+            "until" => KeywordToken(Until),
             identifier => IdentifierToken(identifier.to_string()),
         }
     }
@@ -52,6 +56,8 @@ impl Display for Keyword {
             Mutable => "mutable",
             If => "if",
             Else => "else",
+            Loop => "loop",
+            Until => "until",
         };
         write!(f, "{}", text)
     }

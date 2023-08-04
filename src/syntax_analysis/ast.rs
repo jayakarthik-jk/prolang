@@ -20,10 +20,12 @@ pub enum AbstractSyntaxTree {
     BlockStatement(Rc<RefCell<Block>>),
     IfStatement(
         Box<AbstractSyntaxTree>,         // condition
-        Box<AbstractSyntaxTree>,         // if (block or statement)
-        Option<Box<AbstractSyntaxTree>>, // else (block or statement)
+        Box<AbstractSyntaxTree>,         // block
+        Option<Box<AbstractSyntaxTree>>, // else statement
     ),
-    ElseStatement(Box<AbstractSyntaxTree>),
+    ElseStatement(Box<AbstractSyntaxTree>), // block or if statement
+
+    LoopStatement(Box<AbstractSyntaxTree>, Rc<RefCell<Block>>),
 }
 
 impl Display for AbstractSyntaxTree {
@@ -45,8 +47,9 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::Identifier(name) => write!(f, "{}", name),
 
             AbstractSyntaxTree::BlockStatement(_) => write!(f, "{{ block }}"),
-            AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if (condition) {{ block }}"),
+            AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if condition {{ block }}"),
             AbstractSyntaxTree::ElseStatement(_) => write!(f, "else {{ block }}"),
+            AbstractSyntaxTree::LoopStatement(_, _) => write!(f, "loop until condition {{ }}"),
         }
     }
 }

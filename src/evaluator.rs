@@ -1,15 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::common::datatypes::DataType::Boolean;
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical::Not;
-use crate::common::operators::Operator::{
-    self, ArithmeticOperator, LogicalOperator, RelationalOperator,
-};
+use crate::common::operators::Operator;
+use crate::common::operators::Operator::*;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 use crate::syntax_analysis::block::Block;
 
@@ -26,42 +24,56 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    pub fn evaluate(&self) -> Result<(), CompilerError> {
-        Evaluator::_evaluate(self.statement, Rc::clone(&self.global_block))?;
-        Ok(())
+    pub fn evaluate(&self) -> Result<Variable, CompilerError> {
+        evaluate(self.statement, Rc::clone(&self.global_block))
     }
+}
 
-    fn _evaluate(
-        statement: &AbstractSyntaxTree,
-        block: Rc<RefCell<Block>>,
-    ) -> Result<Variable, CompilerError> {
-        match statement {
-            AbstractSyntaxTree::Literal(literal) => Ok(literal.clone()),
-            AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
-                evaluate_binary_expression(left, block, right, operator)
-            }
-            AbstractSyntaxTree::UnaryExpression(operator, expression) => {
-                evaluate_unary_expression(operator, expression, block)
-            }
-            AbstractSyntaxTree::Identifier(name) => match block.borrow().get_symbol(name) {
-                Some(value) => Ok(value),
-                None => Err(CompilerError::UndefinedVariable(name.clone())),
-            },
-            AbstractSyntaxTree::AssignmentExpression(name, operator, expression) => {
-                evaluate_assignment_expression(name, operator, expression, block)
-            }
-            AbstractSyntaxTree::ParenthesizedExpression(expression) => {
-                Evaluator::_evaluate(expression, block)
-            }
-            AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Rc::clone(block)),
-            AbstractSyntaxTree::IfStatement(condition, if_block_or_statement, else_statement) => {
-                evaluate_if_statement(condition, if_block_or_statement, else_statement, block)
-            }
-            AbstractSyntaxTree::ElseStatement(if_or_block_statement) => {
-                Evaluator::_evaluate(if_or_block_statement, block)
-            }
+fn evaluate(
+    statement: &AbstractSyntaxTree,
+    block: Rc<RefCell<Block>>,
+) -> Result<Variable, CompilerError> {
+    match statement {
+        AbstractSyntaxTree::Literal(literal) => Ok(literal.clone()),
+        AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
+            evaluate_binary_expression(left, block, right, operator)
+        }
+        AbstractSyntaxTree::UnaryExpression(operator, expression) => {
+            evaluate_unary_expression(operator, expression, block)
+        }
+        AbstractSyntaxTree::Identifier(name) => match block.borrow().get_symbol(name) {
+            Some(value) => Ok(value),
+            None => Err(CompilerError::UndefinedVariable(name.clone())),
+        },
+        AbstractSyntaxTree::AssignmentExpression(name, operator, expression) => {
+            evaluate_assignment_expression(name, operator, expression, block)
+        }
+        AbstractSyntaxTree::ParenthesizedExpression(expression) => evaluate(expression, block),
+        AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Rc::clone(block)),
+        AbstractSyntaxTree::IfStatement(condition, if_block_or_statement, else_statement) => {
+            evaluate_if_statement(condition, if_block_or_statement, else_statement, block)
+        }
+        AbstractSyntaxTree::ElseStatement(if_or_block_statement) => {
+            evaluate(if_or_block_statement, block)
+        }
+        AbstractSyntaxTree::LoopStatement(condition, block_to_execute) => {
+            evaluate_loop_statement(condition, Rc::clone(block_to_execute), block)
         }
     }
+}
+
+fn evaluate_loop_statement(
+    condition_statement: &AbstractSyntaxTree,
+    block_to_execute: Rc<RefCell<Block>>,
+    block: Rc<RefCell<Block>>,
+) -> Result<Variable, CompilerError> {
+    let mut condition = evaluate(condition_statement, Rc::clone(&block))?;
+    let mut result = Variable::from(false);
+    while condition.is_truthy() {
+        result = evaluate_block(Rc::clone(&block_to_execute))?;
+        condition = evaluate(condition_statement, Rc::clone(&block))?;
+    }
+    Ok(result)
 }
 
 fn evaluate_if_statement(
@@ -70,20 +82,20 @@ fn evaluate_if_statement(
     else_statement: &Option<Box<AbstractSyntaxTree>>,
     scope_block: Rc<RefCell<Block>>,
 ) -> Result<Variable, CompilerError> {
-    let condition = Evaluator::_evaluate(condition, Rc::clone(&scope_block))?;
+    let condition = evaluate(condition, Rc::clone(&scope_block))?;
     if condition.is_truthy() {
-        Evaluator::_evaluate(if_block_or_statement, Rc::clone(&scope_block))
+        evaluate(if_block_or_statement, Rc::clone(&scope_block))
     } else if let Some(else_block) = else_statement {
-        Evaluator::_evaluate(else_block, scope_block)
+        evaluate(else_block, scope_block)
     } else {
-        Ok(Variable::new(Boolean(false)))
+        Ok(Variable::from(false))
     }
 }
 
 fn evaluate_block(block: Rc<RefCell<Block>>) -> Result<Variable, CompilerError> {
-    let mut result = Variable::new(Boolean(false));
+    let mut result = Variable::from(false);
     for statement in block.borrow().statements.iter() {
-        result = Evaluator::_evaluate(statement, Rc::clone(&block))?;
+        result = evaluate(statement, Rc::clone(&block))?;
     }
     Ok(result)
 }
@@ -94,7 +106,7 @@ fn evaluate_assignment_expression(
     expression: &AbstractSyntaxTree,
     block: Rc<RefCell<Block>>,
 ) -> Result<Variable, CompilerError> {
-    let right_hand = Evaluator::_evaluate(expression, Rc::clone(&block))?;
+    let right_hand = evaluate(expression, Rc::clone(&block))?;
     let block = block.borrow();
     match operator {
         Operator::AssignmentOperator(assigmnent) => match assigmnent {
@@ -135,16 +147,14 @@ fn evaluate_unary_expression(
 ) -> Result<Variable, CompilerError> {
     match operator {
         ArithmeticOperator(operator) => match operator {
-            Addition => Ok(Addition.evaluate_unary(Evaluator::_evaluate(expression, block)?)?),
-            Subtraction => {
-                Ok(Subtraction.evaluate_unary(Evaluator::_evaluate(expression, block)?)?)
-            }
+            Addition => Ok(Addition.evaluate_unary(evaluate(expression, block)?)?),
+            Subtraction => Ok(Subtraction.evaluate_unary(evaluate(expression, block)?)?),
             operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
                 Operator::ArithmeticOperator(*operator),
             )),
         },
         LogicalOperator(operator) => match operator {
-            Not => Ok(Not.evaluate_unary(Evaluator::_evaluate(expression, block)?)?),
+            Not => Ok(Not.evaluate_unary(evaluate(expression, block)?)?),
             operator => Err(CompilerError::InvalidOperatorForUnaryOperation(
                 Operator::LogicalOperator(*operator),
             )),
@@ -159,8 +169,8 @@ fn evaluate_binary_expression(
     right: &AbstractSyntaxTree,
     operator: &Operator,
 ) -> Result<Variable, CompilerError> {
-    let left = Evaluator::_evaluate(left, Rc::clone(&block))?;
-    let right = Evaluator::_evaluate(right, block)?;
+    let left = evaluate(left, Rc::clone(&block))?;
+    let right = evaluate(right, block)?;
     let result = match operator {
         ArithmeticOperator(_) | RelationalOperator(_) | LogicalOperator(_) => {
             operator.evaluate(left, right)?

@@ -1,13 +1,6 @@
-
-a = 35
-mutable str = ""
-
-if a % 5 is 0 and a % 7 is 0 {
-    str = "FizzBuzz"
-} else if a % 5 is 0 {
-    str = "Fizz"
-} else if a % 7 is 0 {
-    str = "Buzz"
-} else {
-    str = a
+mutable a = 10
+mutable count = 0
+loop until a > 0 {
+    a -= 1
+    count += 1
 }
