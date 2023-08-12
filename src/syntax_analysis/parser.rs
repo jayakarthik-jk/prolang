@@ -12,7 +12,7 @@ use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
 use crate::lexical_analysis::keywords::Keyword;
 use crate::lexical_analysis::lexer::Lexer;
-use crate::lexical_analysis::symbols::Symbol::*;
+use crate::lexical_analysis::symbols::Symbol::{GreaterThan, LessThan, *};
 use crate::lexical_analysis::token::TokenKind;
 use crate::syntax_analysis::ast::AbstractSyntaxTree;
 
@@ -48,10 +48,6 @@ impl Parser {
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let token = self.lexer.get_current_token();
         match &token.kind {
-            TokenKind::SymbolToken(OpenCurlyBracket) => {
-                let block = self.parse_block(block)?;
-                Ok(AbstractSyntaxTree::BlockStatement(block))
-            }
             TokenKind::KeywordToken(Keyword::If) => self.parse_if_statement(block),
             TokenKind::KeywordToken(Keyword::Loop) => self.parse_loop_statement(block),
             _ => self.parse_expression(block),
@@ -103,7 +99,12 @@ impl Parser {
             ));
         }
         let condition = self.parse_expression(Rc::clone(&block))?;
-        let if_block = self.parse_statement(Rc::clone(&block))?;
+        let if_block =
+            if TokenKind::SymbolToken(OpenCurlyBracket) == self.lexer.get_current_token().kind {
+                AbstractSyntaxTree::BlockStatement(self.parse_block(Rc::clone(&block))?)
+            } else {
+                self.parse_statement(Rc::clone(&block))?
+            };
         let else_block =
             if TokenKind::KeywordToken(Keyword::Else) == self.lexer.get_current_token().kind {
                 self.lexer.advance();
@@ -122,14 +123,20 @@ impl Parser {
         &self,
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.parse_statement(block)
+        if TokenKind::SymbolToken(OpenCurlyBracket) == self.lexer.get_current_token().kind {
+            Ok(AbstractSyntaxTree::BlockStatement(
+                self.parse_block(Rc::clone(&block))?,
+            ))
+        } else {
+            self.parse_statement(Rc::clone(&block))
+        }
     }
 
     fn parse_loop_statement(
         &self,
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let mut current = self.lexer.get_current_token_and_advance();
+        let current = self.lexer.get_current_token_and_advance();
         if TokenKind::KeywordToken(Keyword::Loop) != current.kind {
             return Err(CompilerError::UnexpectedToken(
                 current.kind.clone(),
@@ -144,20 +151,16 @@ impl Parser {
             self.lexer.advance();
             condition = self.parse_expression(Rc::clone(&block))?;
         }
-        current = self.lexer.get_current_token();
-        if TokenKind::SymbolToken(OpenCurlyBracket) != current.kind {
-            return Err(CompilerError::UnexpectedTokenWithExpected(
-                current.kind.clone(),
-                TokenKind::SymbolToken(OpenCurlyBracket),
-                current.line,
-                current.column,
-            ));
-        }
-        let block_to_execute = self.parse_block(block)?;
+        let block_to_execute =
+            if TokenKind::SymbolToken(OpenCurlyBracket) == self.lexer.get_current_token().kind {
+                AbstractSyntaxTree::BlockStatement(self.parse_block(Rc::clone(&block))?)
+            } else {
+                self.parse_statement(Rc::clone(&block))?
+            };
 
         Ok(AbstractSyntaxTree::LoopStatement(
             Box::new(condition),
-            block_to_execute,
+            Box::new(block_to_execute),
         ))
     }
 
@@ -181,7 +184,7 @@ impl Parser {
                         for _ in 0..length {
                             self.lexer.advance();
                         }
-                        let expression = self.parse_expression(block)?;
+                        let expression = self.parse_statement(block)?;
 
                         Ok(AbstractSyntaxTree::AssignmentExpression(
                             name.to_string(),
@@ -246,7 +249,7 @@ impl Parser {
             TokenKind::LiteralToken(variable) => Ok(AbstractSyntaxTree::Literal(variable.clone())),
             TokenKind::SymbolToken(symbol) => match symbol {
                 OpenParanthesis => {
-                    let expression = self.parse_expression(block)?;
+                    let expression = self.parse_arithmetic_expression(0, block)?;
                     let next_token = self.lexer.get_current_token_and_advance();
                     if next_token.kind == TokenKind::SymbolToken(CloseParanthesis) {
                         Ok(AbstractSyntaxTree::ParenthesizedExpression(Box::new(
@@ -442,7 +445,7 @@ impl Parser {
                         (LogicalOperator(Logical::Not), 1)
                     }
                 }
-                crate::lexical_analysis::symbols::Symbol::GreaterThan => {
+                GreaterThan => {
                     // >
                     if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
                     {
@@ -468,7 +471,7 @@ impl Parser {
                         )
                     }
                 }
-                crate::lexical_analysis::symbols::Symbol::LessThan => {
+                LessThan => {
                     // <
                     if let TokenKind::SymbolToken(second_symbol) = self.lexer.peek(offset + 1).kind
                     {

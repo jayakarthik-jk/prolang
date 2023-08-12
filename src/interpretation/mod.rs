@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
 use crate::evaluator::Evaluator;
 use crate::lexical_analysis::lexer::Lexer;
@@ -14,11 +15,13 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
 
     let global_block = parser.parse()?;
 
+    let mut result = Variable::from(false);
     for statement in global_block.borrow().statements.iter() {
         let evaluator = Evaluator::new(statement, Rc::clone(&global_block));
-        evaluator.evaluate()?;
+        result = evaluator.evaluate()?;
     }
 
+    println!("{}", result);
     println!("{}", global_block.borrow());
 
     Ok(())

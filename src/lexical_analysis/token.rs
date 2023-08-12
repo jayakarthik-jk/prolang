@@ -31,7 +31,6 @@ pub enum TokenKind {
     NewLineToken,
     KeywordToken(Keyword),
     SymbolToken(Symbol),
-    FactoryToken,
     IdentifierToken(String),
     EndOfFileToken,
 }
@@ -44,7 +43,6 @@ impl Display for TokenKind {
             TokenKind::NewLineToken => write!(f, "NewLineToken"),
             TokenKind::KeywordToken(a) => write!(f, "{}", a),
             TokenKind::SymbolToken(a) => write!(f, "{}", a),
-            TokenKind::FactoryToken => write!(f, "FactoryToken"),
             TokenKind::IdentifierToken(a) => write!(f, "{}", a),
             TokenKind::EndOfFileToken => write!(f, "EndOfFileToken"),
         }

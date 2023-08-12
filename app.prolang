@@ -1,6 +1,6 @@
 mutable a = 10
 mutable count = 0
-loop until a > 0 {
+if a > 0 loop until a is not 0 {
     a -= 1
     count += 1
 }

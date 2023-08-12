@@ -37,6 +37,7 @@ impl Display for Symbol {
             Symbol::CloseSquareBracket => "]",
             Symbol::OpenCurlyBracket => "{",
             Symbol::CloseCurlyBracket => "}",
+            // TODO: add bitwise operators &, |, ^
         };
         write!(f, "{}", text)
     }

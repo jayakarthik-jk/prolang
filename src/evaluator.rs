@@ -57,20 +57,20 @@ fn evaluate(
             evaluate(if_or_block_statement, block)
         }
         AbstractSyntaxTree::LoopStatement(condition, block_to_execute) => {
-            evaluate_loop_statement(condition, Rc::clone(block_to_execute), block)
+            evaluate_loop_statement(condition, block_to_execute, block)
         }
     }
 }
 
 fn evaluate_loop_statement(
     condition_statement: &AbstractSyntaxTree,
-    block_to_execute: Rc<RefCell<Block>>,
+    block_or_statement_to_execute: &AbstractSyntaxTree,
     block: Rc<RefCell<Block>>,
 ) -> Result<Variable, CompilerError> {
     let mut condition = evaluate(condition_statement, Rc::clone(&block))?;
     let mut result = Variable::from(false);
     while condition.is_truthy() {
-        result = evaluate_block(Rc::clone(&block_to_execute))?;
+        result = evaluate(block_or_statement_to_execute, Rc::clone(&block))?;
         condition = evaluate(condition_statement, Rc::clone(&block))?;
     }
     Ok(result)

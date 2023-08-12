@@ -25,7 +25,7 @@ pub enum AbstractSyntaxTree {
     ),
     ElseStatement(Box<AbstractSyntaxTree>), // block or if statement
 
-    LoopStatement(Box<AbstractSyntaxTree>, Rc<RefCell<Block>>),
+    LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
 }
 
 impl Display for AbstractSyntaxTree {
