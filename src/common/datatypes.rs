@@ -1,7 +1,8 @@
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
+use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum DataType {
+pub(crate) enum DataType {
     String(Arc<String>),
     Float(f64),
     Integer(i128),
@@ -12,12 +13,12 @@ pub enum DataType {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Variable {
-    pub value: DataType,
+    pub(crate) value: DataType,
     mutability: bool,
 }
 
 impl Variable {
-    pub fn is_truthy(&self) -> bool {
+    pub(crate) fn is_truthy(&self) -> bool {
         match self.clone().value {
             DataType::String(a) => !a.is_empty(),
             DataType::Float(a) => a != 0.0,
@@ -27,31 +28,28 @@ impl Variable {
             DataType::InternalUndefined => false,
         }
     }
-    pub fn is_falsy(&self) -> bool {
-        !self.is_truthy()
-    }
-    pub fn is_mutable(&self) -> bool {
+
+    pub(crate) fn is_mutable(&self) -> bool {
         self.mutability
     }
 
-    pub fn set_mutable(&mut self, mutability: bool) {
-        self.mutability = mutability;
-    }
+    // check if needed. if not remove it.
 
-    pub fn new(value: DataType) -> Self {
-        Self {
-            value,
-            mutability: false,
-        }
-    }
-    pub fn new_mutable(value: DataType) -> Self {
+    // pub(crate) fn new(value: DataType) -> Self {
+    //     Self {
+    //         value,
+    //         mutability: false,
+    //     }
+    // }
+
+    pub(crate) fn new_mutable(value: DataType) -> Self {
         Self {
             value,
             mutability: true,
         }
     }
 
-    pub fn as_mutable(self) -> Self {
+    pub(crate) fn as_mutable(self) -> Self {
         Self {
             value: self.value,
             mutability: true,
@@ -67,6 +65,16 @@ impl From<Arc<String>> for Variable {
         }
     }
 }
+
+impl From<String> for Variable {
+    fn from(value: String) -> Self {
+        Self {
+            value: DataType::String(Arc::new(value)),
+            mutability: false,
+        }
+    }
+}
+
 impl From<i128> for Variable {
     fn from(value: i128) -> Self {
         Self {
@@ -103,7 +111,7 @@ impl From<DataType> for Variable {
 impl Display for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self.clone().value {
-            DataType::String(a) => format!("'{a}'"),
+            DataType::String(a) => format!("{a}"),
             DataType::Float(a) => a.to_string(),
             DataType::Integer(a) => a.to_string(),
             DataType::Boolean(a) => a.to_string(),

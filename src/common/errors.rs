@@ -3,7 +3,8 @@ use std::fmt::Display;
 use colored::Colorize;
 
 use crate::common::operators::Operator;
-use crate::lexical_analysis::token::TokenKind;
+use crate::lexing::symbols::Symbol;
+use crate::lexing::token::TokenKind;
 
 use super::datatypes::Variable;
 
@@ -31,6 +32,9 @@ pub enum CompilerError {
 
     // Semantic Errors
     UndefinedVariable(String),
+    InvalidSeperator(Symbol),
+    InvalidEncloser(Symbol),
+    UndefinedFunction(String),
     InvalidExpressionAssignment,
     InvalidAssignment,
     InvalidStringParsing(Variable),
@@ -111,6 +115,9 @@ impl Display for CompilerError {
                     unexpected, line, column, expected
                 )
             }
+            CompilerError::InvalidSeperator(seperator) => format!("invalid seperator {seperator}"),
+            CompilerError::InvalidEncloser(encloser) => format!("invalid encloser {encloser}"),
+            CompilerError::UndefinedFunction(name) => format!("Undefined function {name}"),
         };
         write!(f, "{}", text.red())
     }

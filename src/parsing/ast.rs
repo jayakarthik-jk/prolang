@@ -1,12 +1,14 @@
 use std::rc::Rc;
 use std::{cell::RefCell, fmt::Display};
 
-use crate::common::{datatypes::Variable, operators::Operator};
+use crate::common::datatypes::Variable;
+use crate::common::operators::Operator;
 
 use super::block::Block;
+use super::seperated_statements::SeperatedStatements;
 
 #[derive(Debug)]
-pub enum AbstractSyntaxTree {
+pub(crate) enum AbstractSyntaxTree {
     // Factors
     Literal(Variable),
     Identifier(String),
@@ -24,8 +26,8 @@ pub enum AbstractSyntaxTree {
         Option<Box<AbstractSyntaxTree>>, // else statement
     ),
     ElseStatement(Box<AbstractSyntaxTree>), // block or if statement
-
     LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
+    CallStatement(String, SeperatedStatements),
 }
 
 impl Display for AbstractSyntaxTree {
@@ -50,6 +52,7 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if condition {{ block }}"),
             AbstractSyntaxTree::ElseStatement(_) => write!(f, "else {{ block }}"),
             AbstractSyntaxTree::LoopStatement(_, _) => write!(f, "loop until condition {{ }}"),
+            AbstractSyntaxTree::CallStatement(name, _) => write!(f, "call to {name}"),
         }
     }
 }

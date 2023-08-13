@@ -24,7 +24,7 @@ impl Display for Logical {
 }
 
 impl Logical {
-    pub fn evaluate(&self, a: Variable, b: Variable) -> Variable {
+    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Variable {
         match self {
             Logical::And => {
                 if !a.is_truthy() {
@@ -45,7 +45,7 @@ impl Logical {
         }
     }
 
-    pub fn evaluate_unary(&self, a: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate_unary(&self, a: Variable) -> Result<Variable, CompilerError> {
         let result = match self {
             Logical::Not => match a.value {
                 Boolean(a) => Variable::from(!a),

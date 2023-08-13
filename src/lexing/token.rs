@@ -5,14 +5,14 @@ use crate::common::datatypes::Variable;
 use super::{keywords::Keyword, symbols::Symbol};
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub line: usize,
-    pub column: usize,
+pub(crate) struct Token {
+    pub(crate) kind: TokenKind,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, line: usize, column: usize) -> Self {
+    pub(crate) fn new(kind: TokenKind, line: usize, column: usize) -> Self {
         Self { kind, line, column }
     }
 }

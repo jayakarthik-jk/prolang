@@ -52,7 +52,7 @@ loop {
 ```
 mutable a = 10
 
-loop until a >= 0 {
+loop while a >= 0 {
     print(a)
     a -= 1
 }
@@ -71,15 +71,15 @@ if a is 0 loop {
 ### using loop with conditional statements together
 
 ```
-if a < 0 loop until a is 0 {
+if a < 0 loop while a is 0 {
     print($"a is negative and it is {a}")
     a += 1
 }
-else if a is 0 loop until a < 10 {
+else if a is 0 loop while a < 10 {
     print($"a is single digit and it is {a}")
     a += 1
 }
-else loop until a < 100 {
+else loop while a < 100 {
     print($"a is double digit and it is {a}")
     a += 1
 }
@@ -94,4 +94,5 @@ add = (a, b) => {
     a + b
 }
 ```
+
 `note: ` by default functions return the last expression

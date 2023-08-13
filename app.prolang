@@ -1,6 +1,8 @@
-mutable a = 10
-mutable count = 0
-if a > 0 loop until a is not 0 {
-    a -= 1
-    count += 1
+mutable count = 4
+mutable i = 0
+
+loop while i < count {
+    name = input("Enter the name ", i, " :")
+    print("Hello, ", name)
+    i += 1
 }

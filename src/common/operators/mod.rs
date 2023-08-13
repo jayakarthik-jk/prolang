@@ -7,10 +7,10 @@ use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational;
 
-pub mod arithmetic;
-pub mod assignment;
-pub mod logical;
-pub mod relational;
+pub(crate) mod arithmetic;
+pub(crate) mod assignment;
+pub(crate) mod logical;
+pub(crate) mod relational;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
@@ -21,7 +21,7 @@ pub enum Operator {
 }
 
 impl Operator {
-    pub fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
             Operator::ArithmeticOperator(arithmetic) => arithmetic.evaluate(a, b),
             Operator::RelationalOperator(relational) => Ok(relational.evaluate(a, b)),
@@ -29,7 +29,7 @@ impl Operator {
             Operator::AssignmentOperator(_) => todo!(),
         }
     }
-    pub fn get_binary_precedence(&self) -> u8 {
+    pub(crate) fn get_binary_precedence(&self) -> u8 {
         match self {
             Operator::ArithmeticOperator(operator) => match operator {
                 Arithmetic::Addition => 6,
@@ -64,7 +64,7 @@ impl Operator {
             },
         }
     }
-    pub fn get_unery_precedence(&self) -> u8 {
+    pub(crate) fn get_unery_precedence(&self) -> u8 {
         match self {
             Operator::ArithmeticOperator(operator) => match operator {
                 Arithmetic::Addition => 9,

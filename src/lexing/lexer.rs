@@ -6,17 +6,17 @@ use std::sync::Arc;
 use super::token::{Token, TokenKind};
 use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
-use crate::lexical_analysis::keywords::Keyword;
-use crate::lexical_analysis::symbols::Symbol::*;
+use crate::lexing::keywords::Keyword;
+use crate::lexing::symbols::Symbol::*;
 
-pub struct Lexer {
+pub(crate) struct Lexer {
     source: Vec<u8>,
     tokens: Vec<Rc<Token>>,
     index: RefCell<usize>,
     position: usize,
     current: char,
-    pub line: usize,
-    pub column: usize,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
 }
 
 impl Display for Lexer {
@@ -26,7 +26,7 @@ impl Display for Lexer {
 }
 
 impl Lexer {
-    pub fn new(source: String) -> Self {
+    pub(crate) fn new(source: String) -> Self {
         let source: Vec<u8> = source.bytes().collect();
         let current = if source.is_empty() {
             '\0'
@@ -45,7 +45,7 @@ impl Lexer {
         }
     }
 
-    pub fn _next(&mut self) -> char {
+    pub(crate) fn _next(&mut self) -> char {
         self.current = if self.position + 1 >= self.source.len() {
             // self.position = self.source.len();
             '\0'
@@ -65,7 +65,7 @@ impl Lexer {
         }
     }
 
-    pub fn parse_token(&mut self) -> Result<Token, CompilerError> {
+    pub(crate) fn parse_token(&mut self) -> Result<Token, CompilerError> {
         let current_token = match self.current {
             '\0' => Token::new(TokenKind::EndOfFileToken, self.line, self.column),
             '\n' => {
@@ -282,7 +282,16 @@ impl Lexer {
                 self._next();
                 token
             }
-
+            ',' => {
+                let token = Token::new(TokenKind::SymbolToken(Comma), self.line, self.column);
+                self._next();
+                token
+            }
+            ':' => {
+                let token = Token::new(TokenKind::SymbolToken(Colon), self.line, self.column);
+                self._next();
+                token
+            }
             _ => {
                 return Err(CompilerError::InvalidCharacter(
                     self.current,
@@ -295,7 +304,7 @@ impl Lexer {
         Ok(current_token)
     }
 
-    pub fn extract_string_from_start_to_current(
+    pub(crate) fn extract_string_from_start_to_current(
         &self,
         start: usize,
     ) -> Result<String, CompilerError> {
@@ -313,19 +322,7 @@ impl Lexer {
         }
     }
 
-    pub fn lex_with_whitespace(&mut self) -> Result<(), CompilerError> {
-        loop {
-            let token = self.parse_token()?;
-            match token.kind {
-                TokenKind::EndOfFileToken => {
-                    return Ok(());
-                }
-                _ => self.tokens.push(Rc::new(token)),
-            }
-        }
-    }
-
-    pub fn lex(&mut self) -> Result<(), CompilerError> {
+    pub(crate) fn lex(&mut self) -> Result<(), CompilerError> {
         loop {
             let token = self.parse_token()?;
             match token.kind {
@@ -341,22 +338,14 @@ impl Lexer {
     }
 
     /// returns tokens\[pointer\]
-    pub fn advance(&self) {
+    pub(crate) fn advance(&self) {
         let mut index = self.index.borrow_mut();
         if *index < self.tokens.len() {
             *index += 1;
         }
     }
 
-    /// returns --pointer
-    pub fn rewind(&self) {
-        let mut index = self.index.borrow_mut();
-        if *index > 0 {
-            *index -= 1;
-        }
-    }
-
-    pub fn peek(&self, offset: usize) -> Rc<Token> {
+    pub(crate) fn peek(&self, offset: usize) -> Rc<Token> {
         let index = *self.index.borrow();
         let token = self.tokens.get(index + offset);
         if let Some(token) = token {
@@ -371,7 +360,7 @@ impl Lexer {
     }
 
     /// returns tokens\[pointer\]
-    pub fn get_current_token(&self) -> Rc<Token> {
+    pub(crate) fn get_current_token(&self) -> Rc<Token> {
         let index = *self.index.borrow();
         let token = self.tokens.get(index);
         if let Some(token) = token {
@@ -385,38 +374,27 @@ impl Lexer {
         }
     }
 
-    /// returns tokens\[++pointer\]
-    pub fn advance_and_get_current_token(&self) -> Rc<Token> {
-        self.advance();
-        self.get_current_token()
-    }
+    // TODO: check if needed. if not remove it
 
-    /// returns tokens\[--pointer\]
-    pub fn rewind_and_get_current_token(&self) -> Rc<Token> {
-        self.rewind();
-        self.get_current_token()
-    }
+    /// returns tokens\[++pointer\]
+    // pub(crate) fn advance_and_get_current_token(&self) -> Rc<Token> {
+    //     self.advance();
+    //     self.get_current_token()
+    // }
 
     /// returns tokens\[pointer++\]
-    pub fn get_current_token_and_advance(&self) -> Rc<Token> {
+    pub(crate) fn get_current_token_and_advance(&self) -> Rc<Token> {
         let current = self.get_current_token();
         self.advance();
-        current
-    }
-
-    /// returns tokens\[pointer--\]
-    pub fn get_current_token_and_rewind(&self) -> Rc<Token> {
-        let current = self.get_current_token();
-        self.rewind();
         current
     }
 
     /// returns tokens.len()
-    pub fn get_token_count(&self) -> usize {
+    pub(crate) fn get_token_count(&self) -> usize {
         self.tokens.len()
     }
 
-    // pub fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
+    // pub(crate)fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
     //     Rc::new(Token::new(TokenKind::FactoryToken, line, column))
     // }
 

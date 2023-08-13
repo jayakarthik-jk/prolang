@@ -7,14 +7,14 @@ use super::symbol_table::SymbolTable;
 use crate::common::datatypes::Variable;
 
 #[derive(Debug, Default)]
-pub struct Block {
-    pub parent: Option<Rc<RefCell<Block>>>,
-    pub statements: Vec<Box<AbstractSyntaxTree>>,
+pub(crate) struct Block {
+    pub(crate) parent: Option<Rc<RefCell<Block>>>,
+    pub(crate) statements: Vec<Box<AbstractSyntaxTree>>,
     symbols: Rc<RefCell<SymbolTable>>,
 }
 
 impl Block {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             statements: vec![],
             symbols: Rc::new(RefCell::new(SymbolTable::new())),
@@ -22,7 +22,7 @@ impl Block {
         }
     }
 
-    pub fn add_symbol(&self, name: String, value: Variable) {
+    pub(crate) fn add_symbol(&self, name: String, value: Variable) {
         if self
             .update_parent_symbol(name.clone(), value.clone())
             .is_none()
@@ -50,7 +50,7 @@ impl Block {
         }
     }
 
-    pub fn contains_symbol(&self, name: &String) -> bool {
+    pub(crate) fn contains_symbol(&self, name: &String) -> bool {
         if self.symbols.borrow().contains(name) {
             true
         } else if let Some(parent) = self.parent.as_ref() {
@@ -60,7 +60,7 @@ impl Block {
         }
     }
 
-    pub fn get_symbol(&self, name: &String) -> Option<Variable> {
+    pub(crate) fn get_symbol(&self, name: &String) -> Option<Variable> {
         if let Some(variable) = self.symbols.borrow().get(name) {
             Some(variable)
         } else if let Some(parent) = self.parent.as_ref() {
@@ -70,11 +70,12 @@ impl Block {
         }
     }
 
-    pub fn remove_symbol(&self, name: &String) {
-        self.symbols.borrow_mut().remove(name);
-    }
+    // TODO: check if needed. if not remove it.
+    // pub(crate) fn remove_symbol(&self, name: &String) {
+    //     self.symbols.borrow_mut().remove(name);
+    // }
 
-    pub fn clear_symbols(&self) {
+    pub(crate) fn clear_symbols(&self) {
         self.symbols.borrow_mut().clear();
     }
 }

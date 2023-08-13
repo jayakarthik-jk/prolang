@@ -32,7 +32,7 @@ impl Display for Arithmetic {
 }
 
 impl Arithmetic {
-    pub fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
             Addition => Self::add(a, b),
             Subtraction => Self::sub(a, b),
@@ -43,7 +43,7 @@ impl Arithmetic {
         }
     }
 
-    pub fn evaluate_unary(&self, variable: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate_unary(&self, variable: Variable) -> Result<Variable, CompilerError> {
         let result = match self {
             Addition => match variable.value {
                 String(a) => {

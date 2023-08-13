@@ -1,4 +1,4 @@
-pub mod datatypes;
+pub(crate) mod datatypes;
 pub mod diagnostics;
-pub mod errors;
-pub mod operators;
+pub(crate) mod errors;
+pub(crate) mod operators;

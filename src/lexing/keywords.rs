@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::common::datatypes::Variable;
 
-use crate::lexical_analysis::token::TokenKind::*;
+use crate::lexing::token::TokenKind::*;
 
 use super::token::TokenKind;
 
@@ -19,12 +19,12 @@ pub enum Keyword {
     If,
     Else,
     Loop,
-    Until,
+    While,
 }
 use self::Keyword::*;
 
 impl Keyword {
-    pub fn get_keyword_kind(keyword: &str) -> TokenKind {
+    pub(crate) fn get_keyword_kind(keyword: &str) -> TokenKind {
         match keyword {
             "true" => LiteralToken(Variable::from(true)),
             "false" => LiteralToken(Variable::from(false)),
@@ -37,7 +37,7 @@ impl Keyword {
             "if" => KeywordToken(If),
             "else" => KeywordToken(Else),
             "loop" => KeywordToken(Loop),
-            "until" => KeywordToken(Until),
+            "while" => KeywordToken(While),
             identifier => IdentifierToken(identifier.to_string()),
         }
     }
@@ -57,7 +57,7 @@ impl Display for Keyword {
             If => "if",
             Else => "else",
             Loop => "loop",
-            Until => "until",
+            While => "while",
         };
         write!(f, "{}", text)
     }

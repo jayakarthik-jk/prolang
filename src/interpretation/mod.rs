@@ -1,10 +1,9 @@
 use std::rc::Rc;
 
-use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
-use crate::evaluator::Evaluator;
-use crate::lexical_analysis::lexer::Lexer;
-use crate::syntax_analysis::parser::Parser;
+use crate::evaluating::evaluator::Evaluator;
+use crate::lexing::lexer::Lexer;
+use crate::parsing::parser::Parser;
 
 pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
     let mut lexer = Lexer::new(source_code);
@@ -15,14 +14,10 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
 
     let global_block = parser.parse()?;
 
-    let mut result = Variable::from(false);
     for statement in global_block.borrow().statements.iter() {
         let evaluator = Evaluator::new(statement, Rc::clone(&global_block));
-        result = evaluator.evaluate()?;
+        evaluator.evaluate()?;
     }
-
-    println!("{}", result);
-    println!("{}", global_block.borrow());
 
     Ok(())
 }

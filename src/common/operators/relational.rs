@@ -27,7 +27,7 @@ impl Display for Relational {
 }
 
 impl Relational {
-    pub fn evaluate(&self, a: Variable, b: Variable) -> Variable {
+    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Variable {
         let result = match self {
             Relational::Equality => match (a.value, b.value) {
                 (String(a), String(b)) => Boolean(a == b),

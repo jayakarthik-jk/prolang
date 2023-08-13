@@ -8,23 +8,27 @@ use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical::Not;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
-use crate::syntax_analysis::ast::AbstractSyntaxTree;
-use crate::syntax_analysis::block::Block;
+use crate::lexing::symbols::Symbol;
+use crate::parsing::ast::AbstractSyntaxTree;
+use crate::parsing::block::Block;
+use crate::parsing::seperated_statements::SeperatedStatements;
 
-pub struct Evaluator<'a> {
+use super::global::GlobalProperties;
+
+pub(crate) struct Evaluator<'a> {
     statement: &'a AbstractSyntaxTree,
     global_block: Rc<RefCell<Block>>,
 }
 
 impl<'a> Evaluator<'a> {
-    pub fn new(statement: &'a AbstractSyntaxTree, global_block: Rc<RefCell<Block>>) -> Self {
+    pub(crate) fn new(statement: &'a AbstractSyntaxTree, global_block: Rc<RefCell<Block>>) -> Self {
         Self {
             statement,
             global_block,
         }
     }
 
-    pub fn evaluate(&self) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self) -> Result<Variable, CompilerError> {
         evaluate(self.statement, Rc::clone(&self.global_block))
     }
 }
@@ -41,10 +45,17 @@ fn evaluate(
         AbstractSyntaxTree::UnaryExpression(operator, expression) => {
             evaluate_unary_expression(operator, expression, block)
         }
-        AbstractSyntaxTree::Identifier(name) => match block.borrow().get_symbol(name) {
-            Some(value) => Ok(value),
-            None => Err(CompilerError::UndefinedVariable(name.clone())),
-        },
+        AbstractSyntaxTree::Identifier(name) => {
+            if let Some(value) = block.borrow().get_symbol(name) {
+                Ok(value)
+            } else {
+                if let Some(variable) = GlobalProperties::get_built_in_properties(name) {
+                    Ok(variable)
+                } else {
+                    Err(CompilerError::UndefinedVariable(name.clone()))
+                }
+            }
+        }
         AbstractSyntaxTree::AssignmentExpression(name, operator, expression) => {
             evaluate_assignment_expression(name, operator, expression, block)
         }
@@ -59,6 +70,32 @@ fn evaluate(
         AbstractSyntaxTree::LoopStatement(condition, block_to_execute) => {
             evaluate_loop_statement(condition, block_to_execute, block)
         }
+        AbstractSyntaxTree::CallStatement(name, arguements) => {
+            evalute_call_statement(name.to_string(), arguements, block)
+        }
+    }
+}
+
+fn evalute_call_statement(
+    name: String,
+    arguements: &SeperatedStatements,
+    block: Rc<RefCell<Block>>,
+) -> Result<Variable, CompilerError> {
+    if Symbol::OpenParanthesis != arguements.enclosed_with {
+        return Err(CompilerError::InvalidEncloser(arguements.enclosed_with));
+    }
+    if Symbol::Comma != arguements.seperated_with {
+        return Err(CompilerError::InvalidSeperator(arguements.seperated_with));
+    }
+    let mut evaluated_arguements: Vec<Variable> = vec![];
+    for arguement in arguements.iter() {
+        let evaluated_arguement = evaluate(arguement, Rc::clone(&block))?;
+        evaluated_arguements.push(evaluated_arguement);
+    }
+
+    match GlobalProperties::get_built_in_function(&name) {
+        Some(built_in_function) => built_in_function(evaluated_arguements),
+        None => Err(CompilerError::UndefinedFunction(name)),
     }
 }
 
@@ -97,6 +134,7 @@ fn evaluate_block(block: Rc<RefCell<Block>>) -> Result<Variable, CompilerError> 
     for statement in block.borrow().statements.iter() {
         result = evaluate(statement, Rc::clone(&block))?;
     }
+    block.borrow().clear_symbols();
     Ok(result)
 }
 

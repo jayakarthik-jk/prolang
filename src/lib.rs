@@ -1,6 +1,6 @@
 pub mod common;
-pub mod evaluator;
+pub(crate) mod evaluating;
 pub mod interpretation;
-pub mod lexical_analysis;
-pub mod syntax_analysis;
-pub mod test;
+pub(crate) mod lexing;
+pub(crate) mod parsing;
+pub(crate) mod test;

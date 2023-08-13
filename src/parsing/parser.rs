@@ -10,24 +10,25 @@ use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational::*;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
-use crate::lexical_analysis::keywords::Keyword;
-use crate::lexical_analysis::lexer::Lexer;
-use crate::lexical_analysis::symbols::Symbol::{GreaterThan, LessThan, *};
-use crate::lexical_analysis::token::TokenKind;
-use crate::syntax_analysis::ast::AbstractSyntaxTree;
+use crate::lexing::keywords::Keyword;
+use crate::lexing::lexer::Lexer;
+use crate::lexing::symbols::Symbol::{self, GreaterThan, LessThan, *};
+use crate::lexing::token::TokenKind;
+use crate::parsing::ast::AbstractSyntaxTree;
 
 use super::block::Block;
+use super::seperated_statements::SeperatedStatements;
 
-pub struct Parser {
+pub(crate) struct Parser {
     lexer: Lexer,
 }
 
 impl Parser {
-    pub fn new(lexer: Lexer) -> Self {
+    pub(crate) fn new(lexer: Lexer) -> Self {
         Self { lexer }
     }
 
-    pub fn parse(&mut self) -> Result<Rc<RefCell<Block>>, CompilerError> {
+    pub(crate) fn parse(&mut self) -> Result<Rc<RefCell<Block>>, CompilerError> {
         if self.lexer.get_token_count() == 0 {
             self.lexer.lex()?;
         }
@@ -124,9 +125,9 @@ impl Parser {
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         if TokenKind::SymbolToken(OpenCurlyBracket) == self.lexer.get_current_token().kind {
-            Ok(AbstractSyntaxTree::BlockStatement(
-                self.parse_block(Rc::clone(&block))?,
-            ))
+            Ok(AbstractSyntaxTree::ElseStatement(Box::new(
+                AbstractSyntaxTree::BlockStatement(self.parse_block(Rc::clone(&block))?),
+            )))
         } else {
             self.parse_statement(Rc::clone(&block))
         }
@@ -136,7 +137,7 @@ impl Parser {
         &self,
         block: Rc<RefCell<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let current = self.lexer.get_current_token_and_advance();
+        let mut current = self.lexer.get_current_token_and_advance();
         if TokenKind::KeywordToken(Keyword::Loop) != current.kind {
             return Err(CompilerError::UnexpectedToken(
                 current.kind.clone(),
@@ -147,16 +148,23 @@ impl Parser {
 
         let mut condition = AbstractSyntaxTree::Literal(Variable::from(true));
 
-        if TokenKind::KeywordToken(Keyword::Until) == self.lexer.get_current_token().kind {
+        if TokenKind::KeywordToken(Keyword::While) == self.lexer.get_current_token().kind {
             self.lexer.advance();
             condition = self.parse_expression(Rc::clone(&block))?;
         }
+
+        current = self.lexer.get_current_token();
+        if TokenKind::SymbolToken(OpenCurlyBracket) != current.kind {
+            return Err(CompilerError::UnexpectedTokenWithExpected(
+                current.kind.clone(),
+                TokenKind::SymbolToken(OpenCurlyBracket),
+                current.line,
+                current.column,
+            ));
+        }
+
         let block_to_execute =
-            if TokenKind::SymbolToken(OpenCurlyBracket) == self.lexer.get_current_token().kind {
-                AbstractSyntaxTree::BlockStatement(self.parse_block(Rc::clone(&block))?)
-            } else {
-                self.parse_statement(Rc::clone(&block))?
-            };
+            AbstractSyntaxTree::BlockStatement(self.parse_block(Rc::clone(&block))?);
 
         Ok(AbstractSyntaxTree::LoopStatement(
             Box::new(condition),
@@ -263,18 +271,19 @@ impl Parser {
                         ))
                     }
                 }
-                CloseParanthesis => Err(CompilerError::UnexpectedToken(
-                    TokenKind::SymbolToken(CloseParanthesis),
-                    token.line,
-                    token.column,
-                )),
                 symbol => Err(CompilerError::UnexpectedToken(
                     TokenKind::SymbolToken(*symbol),
                     token.line,
                     token.column,
                 )),
             },
-            TokenKind::IdentifierToken(name) => Ok(AbstractSyntaxTree::Identifier(name.clone())),
+            TokenKind::IdentifierToken(name) => {
+                if TokenKind::SymbolToken(OpenParanthesis) == self.lexer.get_current_token().kind {
+                    self.parse_call_statement(name.to_string(), block)
+                } else {
+                    Ok(AbstractSyntaxTree::Identifier(name.clone()))
+                }
+            }
             kind => Err(CompilerError::UnexpectedToken(
                 kind.clone(),
                 token.line,
@@ -526,6 +535,51 @@ impl Parser {
             return None;
         };
         Some((operator, offset + length))
+    }
+
+    fn parse_call_statement(
+        &self,
+        name: String,
+        block: Rc<RefCell<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let mut arguements: Vec<Box<AbstractSyntaxTree>> = Vec::new();
+        while TokenKind::SymbolToken(CloseParanthesis) != self.lexer.get_current_token().kind
+            && TokenKind::EndOfFileToken != self.lexer.get_current_token().kind
+        {
+            self.lexer.advance();
+
+            let expression = self.parse_expression(Rc::clone(&block))?;
+            arguements.push(Box::new(expression));
+
+            let current = self.lexer.get_current_token();
+
+            if TokenKind::SymbolToken(CloseParanthesis) != current.kind
+                && TokenKind::SymbolToken(Comma) != current.kind
+            {
+                return Err(CompilerError::UnexpectedTokenWithExpected(
+                    current.kind.clone(),
+                    TokenKind::SymbolToken(Comma),
+                    current.line,
+                    current.column,
+                ));
+            }
+        }
+        let current = self.lexer.get_current_token_and_advance();
+        if TokenKind::SymbolToken(CloseParanthesis) != current.kind {
+            return Err(CompilerError::UnexpectedTokenWithExpected(
+                current.kind.clone(),
+                TokenKind::SymbolToken(Comma),
+                current.line,
+                current.column,
+            ));
+        }
+
+        let seperated_statements =
+            SeperatedStatements::new(Symbol::Comma, Symbol::OpenParanthesis, arguements);
+        Ok(AbstractSyntaxTree::CallStatement(
+            name,
+            seperated_statements,
+        ))
     }
 }
 
