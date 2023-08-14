@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use crate::common::datatypes::Variable;
+use crate::common::variables::Variable;
 
 use super::{keywords::Keyword, symbols::Symbol};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) line: usize,
@@ -23,28 +23,28 @@ impl Display for Token {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
-    LiteralToken(Variable),
+    Literal(Variable),
     /// number of whitespace
-    WhitespaceToken(usize),
-    NewLineToken,
-    KeywordToken(Keyword),
-    SymbolToken(Symbol),
-    IdentifierToken(String),
-    EndOfFileToken,
+    Whitespace(usize),
+    NewLine,
+    Keyword(Keyword),
+    Symbol(Symbol),
+    Identifier(String),
+    EndOfFile,
 }
 
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenKind::LiteralToken(a) => write!(f, "{}", a),
-            TokenKind::WhitespaceToken(a) => write!(f, "{}", a),
-            TokenKind::NewLineToken => write!(f, "NewLineToken"),
-            TokenKind::KeywordToken(a) => write!(f, "{}", a),
-            TokenKind::SymbolToken(a) => write!(f, "{}", a),
-            TokenKind::IdentifierToken(a) => write!(f, "{}", a),
-            TokenKind::EndOfFileToken => write!(f, "EndOfFileToken"),
+            TokenKind::Literal(a) => write!(f, "{}", a),
+            TokenKind::Whitespace(a) => write!(f, "{}", a),
+            TokenKind::NewLine => write!(f, "NewLineToken"),
+            TokenKind::Keyword(a) => write!(f, "{}", a),
+            TokenKind::Symbol(a) => write!(f, "{}", a),
+            TokenKind::Identifier(a) => write!(f, "{}", a),
+            TokenKind::EndOfFile => write!(f, "end of the file"),
         }
     }
 }

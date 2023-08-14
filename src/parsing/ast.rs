@@ -1,8 +1,8 @@
-use std::rc::Rc;
-use std::{cell::RefCell, fmt::Display};
+use std::fmt::Display;
+use std::sync::{Arc, RwLock};
 
-use crate::common::datatypes::Variable;
 use crate::common::operators::Operator;
+use crate::common::variables::Variable;
 
 use super::block::Block;
 use super::seperated_statements::SeperatedStatements;
@@ -12,6 +12,7 @@ pub(crate) enum AbstractSyntaxTree {
     // Factors
     Literal(Variable),
     Identifier(String),
+    // Object(SeperatedStatements<KeyValuePair>),
     // Expressions
     UnaryExpression(Operator, Box<AbstractSyntaxTree>),
     BinaryExpression(Box<AbstractSyntaxTree>, Operator, Box<AbstractSyntaxTree>),
@@ -19,15 +20,16 @@ pub(crate) enum AbstractSyntaxTree {
     AssignmentExpression(String, Operator, Box<AbstractSyntaxTree>),
 
     // statements
-    BlockStatement(Rc<RefCell<Block>>),
+    BlockStatement(Arc<RwLock<Block>>),
     IfStatement(
         Box<AbstractSyntaxTree>,         // condition
         Box<AbstractSyntaxTree>,         // block
         Option<Box<AbstractSyntaxTree>>, // else statement
     ),
     ElseStatement(Box<AbstractSyntaxTree>), // block or if statement
+
     LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
-    CallStatement(String, SeperatedStatements),
+    CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
 }
 
 impl Display for AbstractSyntaxTree {

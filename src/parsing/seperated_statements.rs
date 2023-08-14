@@ -2,20 +2,18 @@ use std::slice::Iter;
 
 use crate::lexing::symbols::Symbol;
 
-use super::ast::AbstractSyntaxTree;
-
 #[derive(Debug)]
-pub(crate) struct SeperatedStatements {
+pub(crate) struct SeperatedStatements<Item> {
     pub(crate) seperated_with: Symbol,
     pub(crate) enclosed_with: Symbol,
-    pub(crate) statements: Vec<Box<AbstractSyntaxTree>>,
+    pub(crate) statements: Vec<Item>,
 }
 
-impl SeperatedStatements {
+impl<Item> SeperatedStatements<Item> {
     pub(crate) fn new(
         seperated_with: Symbol,
         enclosed_with: Symbol,
-        statements: Vec<Box<AbstractSyntaxTree>>,
+        statements: Vec<Item>,
     ) -> Self {
         Self {
             seperated_with,
@@ -24,7 +22,11 @@ impl SeperatedStatements {
         }
     }
 
-    pub(crate) fn iter(&self) -> Iter<Box<AbstractSyntaxTree>> {
+    pub(crate) fn len(&self) -> usize {
+        self.statements.len()
+    }
+
+    pub(crate) fn iter(&self) -> Iter<Item> {
         self.statements.iter()
     }
 }

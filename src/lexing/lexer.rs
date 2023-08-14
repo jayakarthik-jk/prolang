@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use super::token::{Token, TokenKind};
-use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
+use crate::common::variables::Variable;
 use crate::lexing::keywords::Keyword;
 use crate::lexing::symbols::Symbol::*;
 
@@ -67,9 +67,9 @@ impl Lexer {
 
     pub(crate) fn parse_token(&mut self) -> Result<Token, CompilerError> {
         let current_token = match self.current {
-            '\0' => Token::new(TokenKind::EndOfFileToken, self.line, self.column),
+            '\0' => Token::new(TokenKind::EndOfFile, self.line, self.column),
             '\n' => {
-                let token = Token::new(TokenKind::NewLineToken, self.line, self.column);
+                let token = Token::new(TokenKind::NewLine, self.line, self.column);
                 self._next();
                 self.line += 1;
                 self.column = 1;
@@ -81,7 +81,7 @@ impl Lexer {
                     self._next();
                 }
                 let count = self.position - start;
-                let token = Token::new(TokenKind::WhitespaceToken(count), self.line, self.column);
+                let token = Token::new(TokenKind::Whitespace(count), self.line, self.column);
                 return Ok(token);
             }
             current if current.is_ascii_digit() => {
@@ -107,7 +107,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::LiteralToken(Variable::from(number)),
+                        TokenKind::Literal(Variable::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -125,7 +125,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::LiteralToken(Variable::from(number)),
+                        TokenKind::Literal(Variable::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -154,7 +154,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(Variable::from(Arc::new(string.to_string()))),
+                    TokenKind::Literal(Variable::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );
@@ -176,7 +176,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::LiteralToken(Variable::from(Arc::new(string.to_string()))),
+                    TokenKind::Literal(Variable::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );
@@ -184,78 +184,60 @@ impl Lexer {
                 token
             }
             '+' => {
-                let token = Token::new(TokenKind::SymbolToken(Plus), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Plus), self.line, self.column);
                 self._next();
                 token
             }
             '-' => {
-                let token = Token::new(TokenKind::SymbolToken(Minus), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Minus), self.line, self.column);
                 self._next();
                 token
             }
             '*' => {
-                let token = Token::new(TokenKind::SymbolToken(Asterisk), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Asterisk), self.line, self.column);
                 self._next();
                 token
             }
             '/' => {
-                let token = Token::new(TokenKind::SymbolToken(Slash), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Slash), self.line, self.column);
                 self._next();
                 token
             }
             '%' => {
-                let token = Token::new(TokenKind::SymbolToken(Percent), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Percent), self.line, self.column);
                 self._next();
                 token
             }
             '(' => {
-                let token = Token::new(
-                    TokenKind::SymbolToken(OpenParanthesis),
-                    self.line,
-                    self.column,
-                );
+                let token = Token::new(TokenKind::Symbol(OpenParanthesis), self.line, self.column);
                 self._next();
                 token
             }
             ')' => {
-                let token = Token::new(
-                    TokenKind::SymbolToken(CloseParanthesis),
-                    self.line,
-                    self.column,
-                );
+                let token = Token::new(TokenKind::Symbol(CloseParanthesis), self.line, self.column);
                 self._next();
                 token
             }
             '{' => {
-                let token = Token::new(
-                    TokenKind::SymbolToken(OpenCurlyBracket),
-                    self.line,
-                    self.column,
-                );
+                let token = Token::new(TokenKind::Symbol(OpenCurlyBracket), self.line, self.column);
                 self._next();
                 token
             }
             '}' => {
-                let token = Token::new(
-                    TokenKind::SymbolToken(CloseCurlyBracket),
-                    self.line,
-                    self.column,
-                );
+                let token =
+                    Token::new(TokenKind::Symbol(CloseCurlyBracket), self.line, self.column);
                 self._next();
                 token
             }
             '[' => {
-                let token = Token::new(
-                    TokenKind::SymbolToken(OpenSquareBracket),
-                    self.line,
-                    self.column,
-                );
+                let token =
+                    Token::new(TokenKind::Symbol(OpenSquareBracket), self.line, self.column);
                 self._next();
                 token
             }
             ']' => {
                 let token = Token::new(
-                    TokenKind::SymbolToken(CloseSquareBracket),
+                    TokenKind::Symbol(CloseSquareBracket),
                     self.line,
                     self.column,
                 );
@@ -263,32 +245,32 @@ impl Lexer {
                 token
             }
             '=' => {
-                let token = Token::new(TokenKind::SymbolToken(Equals), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Equals), self.line, self.column);
                 self._next();
                 token
             }
             '<' => {
-                let token = Token::new(TokenKind::SymbolToken(LessThan), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(LessThan), self.line, self.column);
                 self._next();
                 token
             }
             '>' => {
-                let token = Token::new(TokenKind::SymbolToken(GreaterThan), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(GreaterThan), self.line, self.column);
                 self._next();
                 token
             }
             '!' => {
-                let token = Token::new(TokenKind::SymbolToken(Exclamation), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Exclamation), self.line, self.column);
                 self._next();
                 token
             }
             ',' => {
-                let token = Token::new(TokenKind::SymbolToken(Comma), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Comma), self.line, self.column);
                 self._next();
                 token
             }
             ':' => {
-                let token = Token::new(TokenKind::SymbolToken(Colon), self.line, self.column);
+                let token = Token::new(TokenKind::Symbol(Colon), self.line, self.column);
                 self._next();
                 token
             }
@@ -326,8 +308,8 @@ impl Lexer {
         loop {
             let token = self.parse_token()?;
             match token.kind {
-                TokenKind::NewLineToken | TokenKind::WhitespaceToken(_) => {}
-                TokenKind::EndOfFileToken => {
+                TokenKind::NewLine | TokenKind::Whitespace(_) => {}
+                TokenKind::EndOfFile => {
                     return Ok(());
                 }
                 _ => {
@@ -351,11 +333,7 @@ impl Lexer {
         if let Some(token) = token {
             Rc::clone(token)
         } else {
-            Rc::new(Token::new(
-                TokenKind::EndOfFileToken,
-                self.line,
-                self.column,
-            ))
+            Rc::new(Token::new(TokenKind::EndOfFile, self.line, self.column))
         }
     }
 
@@ -366,17 +344,14 @@ impl Lexer {
         if let Some(token) = token {
             Rc::clone(token)
         } else {
-            Rc::new(Token::new(
-                TokenKind::EndOfFileToken,
-                self.line,
-                self.column,
-            ))
+            Rc::new(Token::new(TokenKind::EndOfFile, self.line, self.column))
         }
     }
 
     // TODO: check if needed. if not remove it
 
     /// returns tokens\[++pointer\]
+
     // pub(crate) fn advance_and_get_current_token(&self) -> Rc<Token> {
     //     self.advance();
     //     self.get_current_token()

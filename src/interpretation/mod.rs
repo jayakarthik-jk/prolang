@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::common::errors::CompilerError;
 use crate::evaluating::evaluator::Evaluator;
@@ -14,10 +14,12 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
 
     let global_block = parser.parse()?;
 
-    for statement in global_block.borrow().statements.iter() {
-        let evaluator = Evaluator::new(statement, Rc::clone(&global_block));
+    for statement in global_block.read().unwrap().statements.iter() {
+        let evaluator = Evaluator::new(statement, Arc::clone(&global_block));
         evaluator.evaluate()?;
     }
+
+    println!();
 
     Ok(())
 }

@@ -1,28 +1,29 @@
 use std::fmt::Display;
 
+use crate::common::errors::CompilerError;
 use crate::common::operators::Arithmetic::*;
-use crate::common::{datatypes::Variable, errors::CompilerError};
+use crate::common::variables::Variable;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Assingment {
-    SimpleAssignment,
-    AdditionAssignment,
-    SubtractionAssignment,
-    MultiplicationAssignment,
-    DivisionAssignment,
-    ModuloAssignment,
-    ExponentiationAssignment,
+    Simple,
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+    Modulo,
+    Exponentiation,
 }
 
 impl Display for Assingment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            Assingment::SimpleAssignment => "=",
-            Assingment::AdditionAssignment => "+=",
-            Assingment::SubtractionAssignment => "-=",
-            Assingment::MultiplicationAssignment => "*=",
-            Assingment::DivisionAssignment => "/=",
-            Assingment::ModuloAssignment => "%=",
-            Assingment::ExponentiationAssignment => "**=",
+            Assingment::Simple => "=",
+            Assingment::Addition => "+=",
+            Assingment::Subtraction => "-=",
+            Assingment::Multiplication => "*=",
+            Assingment::Division => "/=",
+            Assingment::Modulo => "%=",
+            Assingment::Exponentiation => "**=",
         };
         write!(f, "{}", text)
     }
@@ -31,13 +32,13 @@ impl Display for Assingment {
 impl Assingment {
     pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
         match self {
-            Assingment::SimpleAssignment => Err(CompilerError::InvalidAssignment),
-            Assingment::AdditionAssignment => Addition.evaluate(a, b),
-            Assingment::SubtractionAssignment => Subtraction.evaluate(a, b),
-            Assingment::MultiplicationAssignment => Multiplication.evaluate(a, b),
-            Assingment::DivisionAssignment => Division.evaluate(a, b),
-            Assingment::ModuloAssignment => Modulo.evaluate(a, b),
-            Assingment::ExponentiationAssignment => Exponentiation.evaluate(a, b),
+            Assingment::Simple => Err(CompilerError::InvalidAssignment),
+            Assingment::Addition => Addition.evaluate(a, b),
+            Assingment::Subtraction => Subtraction.evaluate(a, b),
+            Assingment::Multiplication => Multiplication.evaluate(a, b),
+            Assingment::Division => Division.evaluate(a, b),
+            Assingment::Modulo => Modulo.evaluate(a, b),
+            Assingment::Exponentiation => Exponentiation.evaluate(a, b),
         }
     }
 }

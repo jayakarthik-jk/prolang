@@ -1,23 +1,22 @@
-use std::cell::RefCell;
 use std::fmt::Display;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex, RwLock};
 
 use super::ast::AbstractSyntaxTree;
 use super::symbol_table::SymbolTable;
-use crate::common::datatypes::Variable;
+use crate::common::variables::Variable;
 
 #[derive(Debug, Default)]
 pub(crate) struct Block {
-    pub(crate) parent: Option<Rc<RefCell<Block>>>,
-    pub(crate) statements: Vec<Box<AbstractSyntaxTree>>,
-    symbols: Rc<RefCell<SymbolTable>>,
+    pub(crate) parent: Option<Arc<RwLock<Block>>>,
+    pub(crate) statements: Vec<AbstractSyntaxTree>,
+    symbols: Arc<Mutex<SymbolTable>>,
 }
 
 impl Block {
     pub(crate) fn new() -> Self {
         Self {
             statements: vec![],
-            symbols: Rc::new(RefCell::new(SymbolTable::new())),
+            symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
         }
     }
@@ -27,16 +26,16 @@ impl Block {
             .update_parent_symbol(name.clone(), value.clone())
             .is_none()
         {
-            self.symbols.borrow_mut().add(name, value);
+            self.symbols.lock().unwrap().add(name, value);
         }
     }
 
     fn update_symbol(&self, name: String, value: Variable) {
-        self.symbols.borrow_mut().add(name, value)
+        self.symbols.lock().unwrap().add(name, value)
     }
 
     fn current_contains_symbol(&self, name: &String) -> bool {
-        self.symbols.borrow().contains(name)
+        self.symbols.lock().unwrap().contains(name)
     }
 
     fn update_parent_symbol(&self, name: String, value: Variable) -> Option<()> {
@@ -44,27 +43,27 @@ impl Block {
             self.update_symbol(name, value);
             Some(())
         } else if let Some(parent) = self.parent.as_ref() {
-            Block::update_parent_symbol(&parent.borrow(), name, value)
+            Block::update_parent_symbol(&parent.read().unwrap(), name, value)
         } else {
             None
         }
     }
 
     pub(crate) fn contains_symbol(&self, name: &String) -> bool {
-        if self.symbols.borrow().contains(name) {
+        if self.symbols.lock().unwrap().contains(name) {
             true
         } else if let Some(parent) = self.parent.as_ref() {
-            Block::contains_symbol(&parent.borrow(), name)
+            Block::contains_symbol(&parent.read().unwrap(), name)
         } else {
             false
         }
     }
 
     pub(crate) fn get_symbol(&self, name: &String) -> Option<Variable> {
-        if let Some(variable) = self.symbols.borrow().get(name) {
+        if let Some(variable) = self.symbols.lock().unwrap().get(name) {
             Some(variable)
         } else if let Some(parent) = self.parent.as_ref() {
-            Block::get_symbol(&parent.borrow(), name)
+            Block::get_symbol(&parent.read().unwrap(), name)
         } else {
             None
         }
@@ -76,25 +75,25 @@ impl Block {
     // }
 
     pub(crate) fn clear_symbols(&self) {
-        self.symbols.borrow_mut().clear();
+        self.symbols.lock().unwrap().clear();
     }
 }
 
-impl From<Vec<Box<AbstractSyntaxTree>>> for Block {
-    fn from(statements: Vec<Box<AbstractSyntaxTree>>) -> Self {
+impl From<Vec<AbstractSyntaxTree>> for Block {
+    fn from(statements: Vec<AbstractSyntaxTree>) -> Self {
         Self {
             statements,
-            symbols: Rc::new(RefCell::new(SymbolTable::new())),
+            symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
         }
     }
 }
 
-impl From<Rc<RefCell<Block>>> for Block {
-    fn from(parent: Rc<RefCell<Block>>) -> Self {
+impl From<Arc<RwLock<Block>>> for Block {
+    fn from(parent: Arc<RwLock<Block>>) -> Self {
         Self {
             statements: vec![],
-            symbols: Rc::new(RefCell::new(SymbolTable::new())),
+            symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: Some(parent),
         }
     }
@@ -106,7 +105,7 @@ impl Display for Block {
             f,
             "total Statements: {}\nSymbols: {}",
             self.statements.len(),
-            self.symbols.borrow()
+            self.symbols.lock().unwrap()
         )
     }
 }

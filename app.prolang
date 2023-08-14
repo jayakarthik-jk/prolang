@@ -1,8 +1,6 @@
-mutable count = 4
-mutable i = 0
+a = 20
+b = 20
+func = (a, b) => a + b
 
-loop while i < count {
-    name = input("Enter the name ", i, " :")
-    print("Hello, ", name)
-    i += 1
-}
+result = func(10, 20)
+print(result)

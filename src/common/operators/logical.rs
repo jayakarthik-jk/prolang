@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use crate::common::datatypes::DataType::*;
-use crate::common::{datatypes::Variable, errors::CompilerError};
+use crate::common::errors::CompilerError;
+use crate::common::variables::Variable;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {
@@ -45,16 +46,16 @@ impl Logical {
         }
     }
 
-    pub(crate) fn evaluate_unary(&self, a: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate_unary(&self, variable: Variable) -> Result<Variable, CompilerError> {
         let result = match self {
-            Logical::Not => match a.value {
-                Boolean(a) => Variable::from(!a),
-                String(a) => Variable::from(a.len() > 0),
-                Float(a) => Variable::from(a != 0.0),
-                Integer(a) => Variable::from(a != 0),
+            Logical::Not => match variable.value {
+                Boolean(value) => Variable::from(!value),
+                String(value) => Variable::from(value.len() > 0),
+                Float(value) => Variable::from(value != 0.0),
+                Integer(value) => Variable::from(value != 0),
                 Infinity => Variable::from(Infinity),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
-                //TODO: give a good error message, saying that null you may missed `is` operator before not
+                Function(_) => return Err(CompilerError::OperationOnFunction),
             },
             _ => Variable::from(false),
         };

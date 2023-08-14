@@ -1,9 +1,7 @@
 use std::{fmt::Display, sync::Arc};
 
-use crate::common::{
-    datatypes::{DataType::*, Variable},
-    errors::CompilerError,
-};
+use crate::common::variables::Variable;
+use crate::common::{datatypes::DataType::*, errors::CompilerError};
 
 use self::Arithmetic::*;
 
@@ -70,10 +68,11 @@ impl Arithmetic {
                 Infinity => variable,
                 String(_) => return Err(CompilerError::InvalidUneryOperation),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
+                Function(_) => return Err(CompilerError::OperationOnFunction),
             },
             operator => {
                 return Err(CompilerError::InvalidOperatorForUnaryOperation(
-                    Operator::ArithmeticOperator(*operator),
+                    Operator::Arithmetic(*operator),
                 ))
             }
         };
@@ -107,8 +106,8 @@ impl Arithmetic {
                 _ => 1,
             }),
             (Infinity, String(a)) => Variable::from(Arc::new(format!("infinity{a}"))),
-            (_, Infinity) => Variable::from(Infinity),
-            (Infinity, _) => Variable::from(Infinity),
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
+            (_, Infinity) | (Infinity, _) => Variable::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -121,7 +120,7 @@ impl Arithmetic {
             (String(left), right) | (right, String(left)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(left),
-                    Operator::ArithmeticOperator(Subtraction),
+                    Operator::Arithmetic(Subtraction),
                     Variable::from(right),
                 ))
             }
@@ -140,8 +139,8 @@ impl Arithmetic {
                 (false, true) => -1,
                 _ => 0,
             }),
-            (Infinity, _) => Variable::from(Infinity),
-            (_, Infinity) => Variable::from(Infinity),
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
+            (Infinity, _) | (_, Infinity) => Variable::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -154,7 +153,7 @@ impl Arithmetic {
             (String(a), String(b)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(a),
-                    Operator::ArithmeticOperator(Multiplication),
+                    Operator::Arithmetic(Multiplication),
                     Variable::from(b),
                 ))
             }
@@ -209,12 +208,12 @@ impl Arithmetic {
             (String(left), Infinity) | (Infinity, String(left)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(Infinity),
-                    Operator::ArithmeticOperator(Multiplication),
+                    Operator::Arithmetic(Multiplication),
                     Variable::from(left),
                 ))
             }
-            (Infinity, _) => Variable::from(Infinity),
-            (_, Infinity) => Variable::from(Infinity),
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
+            (Infinity, _) | (_, Infinity) => Variable::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -339,8 +338,8 @@ impl Arithmetic {
                     Variable::from(a)
                 }
             }
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, Infinity) => return Err(CompilerError::MathUndefined),
-
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -353,7 +352,7 @@ impl Arithmetic {
             (String(a), b) | (b, String(a)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(a),
-                    Operator::ArithmeticOperator(Modulo),
+                    Operator::Arithmetic(Modulo),
                     Variable::from(b),
                 ))
             }
@@ -458,10 +457,11 @@ impl Arithmetic {
             (Infinity, a) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(Infinity),
-                    Operator::ArithmeticOperator(Modulo),
+                    Operator::Arithmetic(Modulo),
                     Variable::from(a),
                 ))
             }
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -474,7 +474,7 @@ impl Arithmetic {
             (String(a), b) | (b, String(a)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(a),
-                    Operator::ArithmeticOperator(Exponentiation),
+                    Operator::Arithmetic(Exponentiation),
                     Variable::from(b),
                 ))
             }
@@ -547,7 +547,7 @@ impl Arithmetic {
             (a, Infinity) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
                     Variable::from(a),
-                    Operator::ArithmeticOperator(Exponentiation),
+                    Operator::Arithmetic(Exponentiation),
                     Variable::from(Infinity),
                 ))
             }
@@ -565,6 +565,7 @@ impl Arithmetic {
                     Variable::from(Infinity)
                 }
             }
+            (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }

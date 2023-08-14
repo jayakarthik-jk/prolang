@@ -1,9 +1,10 @@
 use std::{io::Write, sync::Arc};
 
-use crate::common::datatypes::Variable;
 use crate::common::errors::CompilerError;
+use crate::common::variables::Variable;
 use std::io::{stdin, stdout};
 
+type BuiltInFunction = fn(Vec<Variable>) -> Result<Variable, CompilerError>;
 lazy_static::lazy_static! {
     static ref GLOBAL_PROPERTIES: Arc<Vec<BuiltInAttributes>> = Arc::new(vec![
         BuiltInAttributes::BuiltInFunctions("print".to_string(), print),
@@ -17,7 +18,8 @@ fn print(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
         print!("{}", variable);
         stdout().flush().unwrap();
     }
-    return Ok(Variable::from(true));
+    println!();
+    Ok(Variable::from(true))
 }
 
 fn input(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
@@ -25,24 +27,23 @@ fn input(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
         print!("{}", variable);
         stdout().flush().unwrap();
     }
+    println!();
     let stdin = stdin();
     let mut buffer = String::new();
     stdin.read_line(&mut buffer).unwrap();
-
-    return Ok(Variable::from(buffer));
+    buffer = buffer.replace('\n', "");
+    Ok(Variable::from(buffer))
 }
 
 enum BuiltInAttributes {
-    BuiltInFunctions(String, fn(Vec<Variable>) -> Result<Variable, CompilerError>),
+    BuiltInFunctions(String, BuiltInFunction),
     BuiltInProperties(String, Variable),
 }
 
 pub(crate) struct GlobalProperties;
 
 impl GlobalProperties {
-    pub(crate) fn get_built_in_function(
-        name: &String,
-    ) -> Option<&'static fn(Vec<Variable>) -> Result<Variable, CompilerError>> {
+    pub(crate) fn get_built_in_function(name: &String) -> Option<&'static BuiltInFunction> {
         for property in GLOBAL_PROPERTIES.iter() {
             if let BuiltInAttributes::BuiltInFunctions(function_name, function) = property {
                 if name == function_name {

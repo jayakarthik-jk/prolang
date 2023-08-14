@@ -1,4 +1,4 @@
-use crate::common::datatypes::Variable;
+use crate::common::variables::Variable;
 use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Default)]

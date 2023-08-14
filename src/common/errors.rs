@@ -3,12 +3,11 @@ use std::fmt::Display;
 use colored::Colorize;
 
 use crate::common::operators::Operator;
+use crate::common::variables::Variable;
 use crate::lexing::symbols::Symbol;
 use crate::lexing::token::TokenKind;
 
-use super::datatypes::Variable;
-
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum CompilerError {
     NoTokensAvailable,
 
@@ -25,6 +24,7 @@ pub enum CompilerError {
     InvalidOperationAsAssignmentOperation,
     CannotConvertFromImmutableToMutable,
     UnInitializedVariable(String),
+    MissingFatArrow(TokenKind, usize, usize),
 
     // Evaluation Errors
     InvalidOperatorForBinaryOperation(Operator),
@@ -44,9 +44,15 @@ pub enum CompilerError {
     OperationOnUndefined,
     InvalidUseOfMutableKeyword,
     ImmutableVariable(String),
+    OperationOnFunction,
+    NotAFunction(String),
+    ArgumentLengthMismatch(String, usize, usize),
 
     // warnings
     Warnings(&'static str),
+
+    // Internal Errors
+    InternalNotAFunction,
 }
 
 impl Display for CompilerError {
@@ -118,6 +124,20 @@ impl Display for CompilerError {
             CompilerError::InvalidSeperator(seperator) => format!("invalid seperator {seperator}"),
             CompilerError::InvalidEncloser(encloser) => format!("invalid encloser {encloser}"),
             CompilerError::UndefinedFunction(name) => format!("Undefined function {name}"),
+            CompilerError::InternalNotAFunction => "Not a function".to_string(),
+            CompilerError::MissingFatArrow(token, line, column) => format!(
+                "Expected fat arrow `=>` but got '{}' at line {}, column {}",
+                token, line, column
+            ),
+            CompilerError::OperationOnFunction => {
+                "Cannot perform operation on a `Function`".to_string()
+            }
+            CompilerError::NotAFunction(name) => format!("{name} is not a function"),
+            CompilerError::ArgumentLengthMismatch(name, parameter_count, argument_count) => {
+                format!(
+                    "Function {name} expects {parameter_count} arguements but got {argument_count}"
+                )
+            }
         };
         write!(f, "{}", text.red())
     }

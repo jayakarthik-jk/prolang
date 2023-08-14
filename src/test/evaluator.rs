@@ -1,7 +1,7 @@
 // #[cfg(test)]
 
 // /// only for testing purposes
-// fn get_evaluator(source: String) -> crate::common::datatypes::Variable {
+// fn get_evaluator(source: String) -> crate::common::variable::Variable {
 //     use crate::common::datatypes::{Variable, DataType};
 
 //     let mut lexer = crate::lexical_analysis::lexer::Lexer::new(source);
@@ -23,14 +23,14 @@
 // fn test_evaluator() {
 //     let source = String::from("1 + 2 * 3");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(7));
+//     assert_eq!(result, crate::common::variable::Variable::from(7));
 // }
 
 // #[test]
 // fn test_evaluator_2() {
 //     let source = String::from("(1 + 2) * 3");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(9));
+//     assert_eq!(result, crate::common::variable::Variable::from(9));
 // }
 
 // // a = 10
@@ -38,10 +38,10 @@
 // fn test_evaluator_3() {
 //     let source = String::from("a = 10");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(10));
+//     assert_eq!(result, crate::common::variable::Variable::from(10));
 //     assert_eq!(
 //         crate::common::symbol_table::SymbolTable::get(&"a".to_string()).unwrap(),
-//         crate::common::datatypes::Variable::from(10)
+//         crate::common::variable::Variable::from(10)
 //     );
 // }
 
@@ -51,18 +51,18 @@
 // fn test_evaluator_4() {
 //     let source = String::from("mutable b = 10");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(10));
+//     assert_eq!(result, crate::common::variable::Variable::from(10));
 //     assert_eq!(
 //         crate::common::symbol_table::SymbolTable::get(&"b".to_string()).unwrap(),
-//         crate::common::datatypes::Variable::from(10).as_mutable()
+//         crate::common::variable::Variable::from(10).as_mutable()
 //     );
 
 //     let source = String::from("b = 20");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(20));
+//     assert_eq!(result, crate::common::variable::Variable::from(20));
 //     assert_eq!(
 //         crate::common::symbol_table::SymbolTable::get(&"b".to_string()).unwrap(),
-//         crate::common::datatypes::Variable::from(20).as_mutable()
+//         crate::common::variable::Variable::from(20).as_mutable()
 //     );
 // }
 
@@ -70,17 +70,17 @@
 // fn test_evaluator_5() {
 //     let source = String::from("mutable b = 10");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(10));
+//     assert_eq!(result, crate::common::variable::Variable::from(10));
 //     assert_eq!(
 //         crate::common::symbol_table::SymbolTable::get(&"b".to_string()).unwrap(),
-//         crate::common::datatypes::Variable::from(10).as_mutable()
+//         crate::common::variable::Variable::from(10).as_mutable()
 //     );
 
 //     let source = String::from("b += 20");
 //     let result = get_evaluator(source);
-//     assert_eq!(result, crate::common::datatypes::Variable::from(30));
+//     assert_eq!(result, crate::common::variable::Variable::from(30));
 //     assert_eq!(
 //         crate::common::symbol_table::SymbolTable::get(&"b".to_string()).unwrap(),
-//         crate::common::datatypes::Variable::from(30).as_mutable()
+//         crate::common::variable::Variable::from(30).as_mutable()
 //     );
 // }

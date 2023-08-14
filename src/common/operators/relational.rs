@@ -1,5 +1,5 @@
 use crate::common::datatypes::DataType::*;
-use crate::common::datatypes::Variable;
+use crate::common::variables::Variable;
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
