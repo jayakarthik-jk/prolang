@@ -9,7 +9,7 @@ lazy_static::lazy_static! {
     static ref GLOBAL_PROPERTIES: Arc<Vec<BuiltInAttributes>> = Arc::new(vec![
         BuiltInAttributes::BuiltInFunctions("print".to_string(), print),
         BuiltInAttributes::BuiltInFunctions("input".to_string(), input),
-        BuiltInAttributes::BuiltInProperties("PI".to_string(), Variable::from(3.14))
+        BuiltInAttributes::BuiltInProperties("lucky".to_string(), Variable::from(7))
     ]);
 }
 
@@ -43,7 +43,7 @@ enum BuiltInAttributes {
 pub(crate) struct GlobalProperties;
 
 impl GlobalProperties {
-    pub(crate) fn get_built_in_function(name: &String) -> Option<&'static BuiltInFunction> {
+    pub(crate) fn get_built_in_function(name: &str) -> Option<&'static BuiltInFunction> {
         for property in GLOBAL_PROPERTIES.iter() {
             if let BuiltInAttributes::BuiltInFunctions(function_name, function) = property {
                 if name == function_name {
@@ -53,7 +53,7 @@ impl GlobalProperties {
         }
         None
     }
-    pub(crate) fn get_built_in_properties(name: &String) -> Option<Variable> {
+    pub(crate) fn get_built_in_properties(name: &str) -> Option<Variable> {
         for property in GLOBAL_PROPERTIES.iter() {
             if let BuiltInAttributes::BuiltInProperties(property_name, property_value) = property {
                 if name == property_name {

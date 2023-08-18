@@ -58,7 +58,12 @@ fn evaluate(
             evaluate_assignment_expression(name, operator, expression, block)
         }
         AbstractSyntaxTree::ParenthesizedExpression(expression) => evaluate(expression, block),
-        AbstractSyntaxTree::BlockStatement(block) => evaluate_block(Arc::clone(block)),
+        AbstractSyntaxTree::BlockStatement(block_statement) => {
+            {
+                block_statement.write().unwrap().parent = Some(Arc::clone(&block));
+            }
+            evaluate_block(Arc::clone(block_statement))
+        }
         AbstractSyntaxTree::IfStatement(condition, if_block_or_statement, else_statement) => {
             evaluate_if_statement(condition, if_block_or_statement, else_statement, block)
         }
@@ -100,6 +105,20 @@ fn evalute_call_statement(
                     evaluated_arguements.len(),
                 ));
             }
+            let block = if let Ok(result_block) = function.block.to_block() {
+                result_block
+            } else {
+                Arc::new(RwLock::new(Block::from(block)))
+            };
+            for (index, parameter) in function.parameters.iter().enumerate() {
+                if let AbstractSyntaxTree::Identifier(name) = parameter {
+                    block
+                        .read()
+                        .unwrap()
+                        .add_symbol(name.clone(), evaluated_arguements[index].clone());
+                }
+            }
+
             return evaluate(&function.block, block);
         } else {
             return Err(CompilerError::NotAFunction(name));
@@ -151,7 +170,7 @@ fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Variable, CompilerError> 
 }
 
 fn evaluate_assignment_expression(
-    name: &String,
+    name: &str,
     operator: &Operator,
     expression: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
@@ -176,13 +195,13 @@ fn evaluate_assignment_expression(
                 if let Some(old_variable) = block.get_symbol(name) {
                     if old_variable.is_mutable() {
                         let result = assignment_operator.evaluate(old_variable, right_hand)?;
-                        block.add_symbol(name.clone(), result.clone().to_mutable());
+                        block.add_symbol(name.to_string(), result.clone().to_mutable());
                         Ok(result)
                     } else {
-                        Err(CompilerError::ImmutableVariable(name.clone()))
+                        Err(CompilerError::ImmutableVariable(name.to_string()))
                     }
                 } else {
-                    Err(CompilerError::UndefinedVariable(name.clone()))
+                    Err(CompilerError::UndefinedVariable(name.to_string()))
                 }
             }
         },

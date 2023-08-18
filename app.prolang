@@ -1,6 +1,9 @@
-a = 20
-b = 20
-func = (a, b) => a + b
+func = (a, b) => if a < b {
+    a + b
+}
 
-result = func(10, 20)
+result = func(
+    10, 
+    20
+)
 print(result)

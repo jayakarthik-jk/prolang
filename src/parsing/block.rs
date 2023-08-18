@@ -34,7 +34,7 @@ impl Block {
         self.symbols.lock().unwrap().add(name, value)
     }
 
-    fn current_contains_symbol(&self, name: &String) -> bool {
+    fn current_contains_symbol(&self, name: &str) -> bool {
         self.symbols.lock().unwrap().contains(name)
     }
 
@@ -49,7 +49,7 @@ impl Block {
         }
     }
 
-    pub(crate) fn contains_symbol(&self, name: &String) -> bool {
+    pub(crate) fn contains_symbol(&self, name: &str) -> bool {
         if self.symbols.lock().unwrap().contains(name) {
             true
         } else if let Some(parent) = self.parent.as_ref() {
@@ -59,7 +59,7 @@ impl Block {
         }
     }
 
-    pub(crate) fn get_symbol(&self, name: &String) -> Option<Variable> {
+    pub(crate) fn get_symbol(&self, name: &str) -> Option<Variable> {
         if let Some(variable) = self.symbols.lock().unwrap().get(name) {
             Some(variable)
         } else if let Some(parent) = self.parent.as_ref() {
@@ -68,11 +68,6 @@ impl Block {
             None
         }
     }
-
-    // TODO: check if needed. if not remove it.
-    // pub(crate) fn remove_symbol(&self, name: &String) {
-    //     self.symbols.borrow_mut().remove(name);
-    // }
 
     pub(crate) fn clear_symbols(&self) {
         self.symbols.lock().unwrap().clear();

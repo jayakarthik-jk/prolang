@@ -41,9 +41,9 @@ impl Variable {
         }
     }
 
-    pub(crate) fn to_mutable(self) -> Self {
+    pub(crate) fn to_mutable(&self) -> Self {
         Self {
-            value: self.value,
+            value: self.value.clone(),
             mutability: true,
         }
     }
@@ -109,7 +109,7 @@ impl Display for Variable {
             DataType::Boolean(a) => a.to_string(),
             DataType::Infinity => "Infinity".to_string(),
             DataType::InternalUndefined => "Undefined".to_string(),
-            DataType::Function(_) => format!("Function"),
+            DataType::Function(_) => "Function".to_string(),
         };
         write!(f, "{text}")
     }

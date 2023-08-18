@@ -32,6 +32,16 @@ pub(crate) enum AbstractSyntaxTree {
     CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
 }
 
+impl AbstractSyntaxTree {
+    pub(crate) fn to_block(&self) -> Result<Arc<RwLock<Block>>, String> {
+        if let AbstractSyntaxTree::BlockStatement(block) = self {
+            Ok(Arc::clone(block))
+        } else {
+            Err("Not a block statement".to_string())
+        }
+    }
+}
+
 impl Display for AbstractSyntaxTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -54,7 +64,7 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if condition {{ block }}"),
             AbstractSyntaxTree::ElseStatement(_) => write!(f, "else {{ block }}"),
             AbstractSyntaxTree::LoopStatement(_, _) => write!(f, "loop until condition {{ }}"),
-            AbstractSyntaxTree::CallStatement(name, _) => write!(f, "call to {name}"),
+            AbstractSyntaxTree::CallStatement(name, _) => write!(f, "Function call: {name}"),
         }
     }
 }

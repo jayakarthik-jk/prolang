@@ -308,7 +308,7 @@ impl Lexer {
         loop {
             let token = self.parse_token()?;
             match token.kind {
-                TokenKind::NewLine | TokenKind::Whitespace(_) => {}
+                TokenKind::Whitespace(_) => {}
                 TokenKind::EndOfFile => {
                     return Ok(());
                 }

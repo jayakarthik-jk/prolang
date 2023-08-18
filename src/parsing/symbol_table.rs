@@ -17,18 +17,13 @@ impl SymbolTable {
         self.table.insert(name, value);
     }
 
-    pub(crate) fn contains(&self, name: &String) -> bool {
+    pub(crate) fn contains(&self, name: &str) -> bool {
         self.table.contains_key(name)
     }
 
-    pub(crate) fn get(&self, name: &String) -> Option<Variable> {
+    pub(crate) fn get(&self, name: &str) -> Option<Variable> {
         self.table.get(name).cloned()
     }
-
-    // TODO: check if needed. if not remove it.
-    // pub(crate) fn remove(&mut self, name: &String) {
-    //     self.table.remove(name);
-    // }
 
     pub(crate) fn clear(&mut self) {
         self.table.clear();

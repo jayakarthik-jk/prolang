@@ -24,7 +24,7 @@ pub enum CompilerError {
     InvalidOperationAsAssignmentOperation,
     CannotConvertFromImmutableToMutable,
     UnInitializedVariable(String),
-    MissingFatArrow(TokenKind, usize, usize),
+    MissingArrow(TokenKind, usize, usize),
 
     // Evaluation Errors
     InvalidOperatorForBinaryOperation(Operator),
@@ -125,8 +125,8 @@ impl Display for CompilerError {
             CompilerError::InvalidEncloser(encloser) => format!("invalid encloser {encloser}"),
             CompilerError::UndefinedFunction(name) => format!("Undefined function {name}"),
             CompilerError::InternalNotAFunction => "Not a function".to_string(),
-            CompilerError::MissingFatArrow(token, line, column) => format!(
-                "Expected fat arrow `=>` but got '{}' at line {}, column {}",
+            CompilerError::MissingArrow(token, line, column) => format!(
+                "Expected arrow `=>` but got '{}' at line {}, column {}",
                 token, line, column
             ),
             CompilerError::OperationOnFunction => {
