@@ -9,6 +9,10 @@ pub struct Literal {
 }
 
 impl Literal {
+    pub(crate) fn new(value: DataType, mutability: bool) -> Self {
+        Self { value, mutability }
+    }
+
     pub(crate) fn is_truthy(&self) -> bool {
         match self.clone().value {
             DataType::String(a) => !a.is_empty(),
@@ -18,21 +22,13 @@ impl Literal {
             DataType::Infinity => true,
             DataType::InternalUndefined => false,
             DataType::Function(_) => true,
+            DataType::Return(_) => false,
         }
     }
 
     pub(crate) fn is_mutable(&self) -> bool {
         self.mutability
     }
-
-    // check if needed. if not remove it.
-
-    // pub(crate) fn new(value: DataType) -> Self {
-    //     Self {
-    //         value,
-    //         mutability: false,
-    //     }
-    // }
 
     pub(crate) fn new_mutable(value: DataType) -> Self {
         Self {
@@ -110,6 +106,7 @@ impl Display for Literal {
             DataType::Infinity => "Infinity".to_string(),
             DataType::InternalUndefined => "Undefined".to_string(),
             DataType::Function(_) => "Function".to_string(),
+            DataType::Return(_) => "Return".to_string(),
         };
         write!(f, "{text}")
     }

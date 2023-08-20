@@ -53,8 +53,24 @@ impl Parser {
                 Ok(AbstractSyntaxTree::BlockStatement(self.parse_block(block)?))
             }
             TokenKind::Keyword(Keyword::Loop) => self.parse_loop_statement(block),
+            TokenKind::Keyword(Keyword::Return) => self.parse_return_statement(block),
             _ => self.parse_expression(block),
         }
+    }
+
+    fn parse_return_statement(
+        &self,
+        parent: Arc<RwLock<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.lexer.advance();
+        if TokenKind::NewLine == self.lexer.get_current_token().kind {
+            self.lexer.advance();
+            return Ok(AbstractSyntaxTree::ReturnStatement(Box::new(
+                AbstractSyntaxTree::Literal(Literal::from(false)),
+            )));
+        }
+        let returnable = self.parse_statement(parent)?;
+        Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
     }
 
     fn parse_block(&self, parent: Arc<RwLock<Block>>) -> Result<Arc<RwLock<Block>>, CompilerError> {
@@ -83,7 +99,6 @@ impl Parser {
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let condition = self.parse_expression(Arc::clone(&block))?;
         let if_block = self.parse_statement(Arc::clone(&block))?;
-
         let else_block = if TokenKind::Keyword(Keyword::Else) == self.lexer.get_current_token().kind
         {
             self.lexer.advance();
@@ -172,8 +187,18 @@ impl Parser {
         }
         self.lexer.advance();
         self.lexer.advance();
-
-        let function_block = self.parse_statement(block)?;
+        let previous_state = block.read().unwrap().is_function;
+        block.write().unwrap().is_function = true;
+        let function_block_ast = self.parse_statement(Arc::clone(&block))?;
+        block.write().unwrap().is_function = previous_state;
+        let function_block = if let Ok(block) = function_block_ast.to_block() {
+            block
+        } else {
+            let mut current_block = Block::from(vec![function_block_ast]);
+            current_block.parent = Some(block);
+            current_block.is_function = true;
+            Arc::new(RwLock::new(current_block))
+        };
         let parameters = SeperatedStatements::new(Comma, OpenParanthesis, parameters);
         let function = Function::new(function_block, parameters);
         let function = DataType::Function(Arc::new(function));

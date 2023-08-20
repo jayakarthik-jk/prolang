@@ -59,9 +59,6 @@ fn evaluate(
         }
         AbstractSyntaxTree::ParenthesizedExpression(expression) => evaluate(expression, block),
         AbstractSyntaxTree::BlockStatement(block_statement) => {
-            {
-                block_statement.write().unwrap().parent = Some(Arc::clone(&block));
-            }
             evaluate_block(Arc::clone(block_statement))
         }
         AbstractSyntaxTree::IfStatement(condition, if_block_or_statement, else_statement) => {
@@ -76,6 +73,10 @@ fn evaluate(
         AbstractSyntaxTree::CallStatement(name, arguements) => {
             evalute_call_statement(name.to_string(), arguements, block)
         }
+        AbstractSyntaxTree::ReturnStatement(statement) => Ok(Literal::new(
+            DataType::Return(Box::new(evaluate(statement, block)?)),
+            false,
+        )),
     }
 }
 
@@ -105,21 +106,17 @@ fn evalute_call_statement(
                     evaluated_arguements.len(),
                 ));
             }
-            let block = if let Ok(result_block) = function.block.to_block() {
-                result_block
-            } else {
-                Arc::new(RwLock::new(Block::from(block)))
-            };
             for (index, parameter) in function.parameters.iter().enumerate() {
                 if let AbstractSyntaxTree::Identifier(name) = parameter {
-                    block
+                    function
+                        .block
                         .read()
                         .unwrap()
                         .add_symbol(name.clone(), evaluated_arguements[index].clone());
                 }
             }
 
-            return evaluate(&function.block, block);
+            return evaluate_block(Arc::clone(&function.block));
         } else {
             return Err(CompilerError::NotAFunction(name));
         }
@@ -164,6 +161,14 @@ fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Literal, CompilerError> {
     let mut result = Literal::from(false);
     for statement in block.read().unwrap().statements.iter() {
         result = evaluate(statement, Arc::clone(&block))?;
+        if let DataType::Return(statement) = result.value {
+            if block.read().unwrap().is_function {
+                result = *statement;
+                break;
+            } else {
+                return Err(CompilerError::ReturnOutsideFunction);
+            }
+        }
     }
     block.read().unwrap().clear_symbols();
     Ok(result)

@@ -56,6 +56,7 @@ impl Logical {
                 Infinity => Literal::from(Infinity),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
                 Function(_) => return Err(CompilerError::OperationOnFunction),
+                Return(_) => return Err(CompilerError::OperationOnReturn),
             },
             _ => Literal::from(false),
         };

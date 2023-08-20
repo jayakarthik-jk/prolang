@@ -1,9 +1,21 @@
-func = (a, b) => if a < b {
-    a + b
+number = +input("Enter a number: ")
+
+main = () => {
+    divisible_by_3 = (number) => number % 3 == 0
+    divisible_by_5 = (number) => number % 5 == 0
+    divisible_by_7 = (number) => number % 7 == 0
+
+
+    if divisible_by_3(number) {
+        print("Fizz")
+        return
+    }
+    if divisible_by_5(number) {
+        print("Buzz")
+    }
+    if divisible_by_7(number) {
+        print("Bang")
+    }
 }
 
-result = func(
-    10, 
-    20
-)
-print(result)
+main()

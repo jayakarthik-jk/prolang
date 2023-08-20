@@ -69,6 +69,7 @@ impl Arithmetic {
                 String(_) => return Err(CompilerError::InvalidUneryOperation),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
                 Function(_) => return Err(CompilerError::OperationOnFunction),
+                Return(_) => return Err(CompilerError::OperationOnReturn),
             },
             operator => {
                 return Err(CompilerError::InvalidOperatorForUnaryOperation(
@@ -106,6 +107,7 @@ impl Arithmetic {
                 _ => 1,
             }),
             (Infinity, String(a)) => Literal::from(Arc::new(format!("infinity{a}"))),
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, Infinity) | (Infinity, _) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -139,6 +141,7 @@ impl Arithmetic {
                 (false, true) => -1,
                 _ => 0,
             }),
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -212,6 +215,7 @@ impl Arithmetic {
                     Literal::from(left),
                 ))
             }
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -338,6 +342,7 @@ impl Arithmetic {
                     Literal::from(a)
                 }
             }
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, Infinity) => return Err(CompilerError::MathUndefined),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -461,6 +466,7 @@ impl Arithmetic {
                     Literal::from(a),
                 ))
             }
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
@@ -565,6 +571,7 @@ impl Arithmetic {
                     Literal::from(Infinity)
                 }
             }
+            (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)

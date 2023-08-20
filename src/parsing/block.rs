@@ -9,6 +9,7 @@ use crate::common::literal::Literal;
 pub(crate) struct Block {
     pub(crate) parent: Option<Arc<RwLock<Block>>>,
     pub(crate) statements: Vec<AbstractSyntaxTree>,
+    pub(crate) is_function: bool,
     symbols: Arc<Mutex<SymbolTable>>,
 }
 
@@ -18,6 +19,7 @@ impl Block {
             statements: vec![],
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
+            is_function: false,
         }
     }
 
@@ -80,6 +82,7 @@ impl From<Vec<AbstractSyntaxTree>> for Block {
             statements,
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
+            is_function: false,
         }
     }
 }
@@ -89,6 +92,7 @@ impl From<Arc<RwLock<Block>>> for Block {
         Self {
             statements: vec![],
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
+            is_function: Arc::clone(&parent).read().unwrap().is_function,
             parent: Some(parent),
         }
     }

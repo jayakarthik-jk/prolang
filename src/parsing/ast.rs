@@ -1,11 +1,9 @@
-use std::fmt::Display;
-use std::sync::{Arc, RwLock};
-
-use crate::common::literal::Literal;
-use crate::common::operators::Operator;
-
 use super::block::Block;
 use super::seperated_statements::SeperatedStatements;
+use crate::common::literal::Literal;
+use crate::common::operators::Operator;
+use std::fmt::Display;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug)]
 pub(crate) enum AbstractSyntaxTree {
@@ -30,6 +28,7 @@ pub(crate) enum AbstractSyntaxTree {
 
     LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
     CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
+    ReturnStatement(Box<AbstractSyntaxTree>),
 }
 
 impl AbstractSyntaxTree {
@@ -44,27 +43,29 @@ impl AbstractSyntaxTree {
 
 impl Display for AbstractSyntaxTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
+        let output = match self {
             AbstractSyntaxTree::UnaryExpression(operator, operand) => {
-                write!(f, "{}{}", operator, operand)
+                format!("{}{}", operator, operand)
             }
             AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
-                write!(f, "{} {} {}", left, operator, right)
+                format!("{} {} {}", left, operator, right)
             }
-            AbstractSyntaxTree::Literal(value) => write!(f, "{}", value),
+            AbstractSyntaxTree::Literal(value) => format!("{}", value),
             AbstractSyntaxTree::AssignmentExpression(identifier, equals, expression) => {
-                write!(f, "{} {} {}", identifier, equals, expression)
+                format!("{} {} {}", identifier, equals, expression)
             }
             AbstractSyntaxTree::ParenthesizedExpression(expression) => {
-                write!(f, "( {} )", expression)
+                format!("( {} )", expression)
             }
-            AbstractSyntaxTree::Identifier(name) => write!(f, "{}", name),
+            AbstractSyntaxTree::Identifier(name) => name.to_string(),
 
-            AbstractSyntaxTree::BlockStatement(_) => write!(f, "{{ block }}"),
-            AbstractSyntaxTree::IfStatement(_, _, _) => write!(f, "if condition {{ block }}"),
-            AbstractSyntaxTree::ElseStatement(_) => write!(f, "else {{ block }}"),
-            AbstractSyntaxTree::LoopStatement(_, _) => write!(f, "loop until condition {{ }}"),
-            AbstractSyntaxTree::CallStatement(name, _) => write!(f, "Function call: {name}"),
-        }
+            AbstractSyntaxTree::BlockStatement(_) => "{{ block }}".to_string(),
+            AbstractSyntaxTree::IfStatement(_, _, _) => "if condition {{ block }}".to_string(),
+            AbstractSyntaxTree::ElseStatement(_) => "else {{ block }}".to_string(),
+            AbstractSyntaxTree::LoopStatement(_, _) => "loop until condition {{ }}".to_string(),
+            AbstractSyntaxTree::CallStatement(name, _) => format!("Function call: {name}"),
+            AbstractSyntaxTree::ReturnStatement(_) => "return".to_string(),
+        };
+        write!(f, "{output}")
     }
 }

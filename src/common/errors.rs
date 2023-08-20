@@ -41,18 +41,20 @@ pub enum CompilerError {
     InvalidUneryOperation,
     UnsupportedOperationBetween(Literal, Operator, Literal),
     MathUndefined,
-    OperationOnUndefined,
     InvalidUseOfMutableKeyword,
     ImmutableVariable(String),
     OperationOnFunction,
     NotAFunction(String),
     ArgumentLengthMismatch(String, usize, usize),
+    OperationOnReturn,
+    ReturnOutsideFunction,
 
     // warnings
     Warnings(&'static str),
 
     // Internal Errors
     InternalNotAFunction,
+    OperationOnUndefined,
 }
 
 impl Display for CompilerError {
@@ -87,7 +89,7 @@ impl Display for CompilerError {
             CompilerError::InvalidAssignment => "Invalid assignment".to_string(),
             CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
             CompilerError::InvalidStringParsing(a) => {
-                format!("Invalid string parsing: '{}' is not a valid Nubmer", a)
+                format!("Invalid string parsing: '{}' is not a valid Number", a)
             }
             CompilerError::InvalidUneryOperation => "Invalid unary operation".to_string(),
             CompilerError::UnsupportedOperationBetween(left, operator, right) => {
@@ -98,7 +100,7 @@ impl Display for CompilerError {
             }
             CompilerError::MathUndefined => "Math Error: undefined".to_string(),
             CompilerError::OperationOnUndefined => {
-                "Cannot perform operation on Undefined".to_string()
+                panic!("operation on undefined. this should not be happening, place an issue")
             }
             CompilerError::InvalidUtf8Character => "Invalid UTF-8 character".to_string(),
             CompilerError::InvalidUseOfMutableKeyword => {
@@ -137,6 +139,12 @@ impl Display for CompilerError {
                 format!(
                     "Function {name} expects {parameter_count} arguements but got {argument_count}"
                 )
+            }
+            CompilerError::OperationOnReturn => {
+                "Cannot perform operation on `return` Keyword".to_string()
+            }
+            CompilerError::ReturnOutsideFunction => {
+                "return statement outside a function".to_string()
             }
         };
         write!(f, "{}", text.red())

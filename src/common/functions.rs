@@ -1,11 +1,13 @@
 use std::fmt::Display;
+use std::sync::{Arc, RwLock};
 
 use crate::parsing::ast::AbstractSyntaxTree;
+use crate::parsing::block::Block;
 use crate::parsing::seperated_statements::SeperatedStatements;
 
 #[derive(Debug)]
 pub(crate) struct Function {
-    pub(crate) block: AbstractSyntaxTree,
+    pub(crate) block: Arc<RwLock<Block>>,
     pub(crate) parameters: SeperatedStatements<AbstractSyntaxTree>,
 }
 
@@ -17,7 +19,7 @@ impl PartialEq for Function {
 
 impl Function {
     pub(crate) fn new(
-        block: AbstractSyntaxTree,
+        block: Arc<RwLock<Block>>,
         parameters: SeperatedStatements<AbstractSyntaxTree>,
     ) -> Self {
         Self { block, parameters }
