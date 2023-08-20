@@ -1,5 +1,5 @@
 use crate::common::datatypes::DataType::*;
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -27,7 +27,7 @@ impl Display for Relational {
 }
 
 impl Relational {
-    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Variable {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Literal {
         let result = match self {
             Relational::Equality => match (a.value, b.value) {
                 (String(a), String(b)) => Boolean(a == b),
@@ -79,6 +79,6 @@ impl Relational {
             },
         };
 
-        Variable::from(result)
+        Literal::from(result)
     }
 }

@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
 use crate::common::errors::CompilerError;
+use crate::common::literal::Literal;
 use crate::common::operators::arithmetic::Arithmetic;
 use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational;
-use crate::common::variables::Variable;
 
 pub(crate) mod arithmetic;
 pub(crate) mod assignment;
@@ -21,7 +21,7 @@ pub enum Operator {
 }
 
 impl Operator {
-    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Result<Literal, CompilerError> {
         match self {
             Operator::Arithmetic(arithmetic) => arithmetic.evaluate(a, b),
             Operator::Relational(relational) => Ok(relational.evaluate(a, b)),

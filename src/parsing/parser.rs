@@ -7,13 +7,13 @@ use crate::common::datatypes::DataType;
 use crate::common::diagnostics::Diagnostics;
 use crate::common::errors::CompilerError;
 use crate::common::functions::Function;
+use crate::common::literal::Literal;
 use crate::common::operators::arithmetic::Arithmetic;
 use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical;
 use crate::common::operators::relational::Relational;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
-use crate::common::variables::Variable;
 use crate::lexing::keywords::Keyword;
 use crate::lexing::lexer::Lexer;
 use crate::lexing::symbols::Symbol::*;
@@ -112,7 +112,7 @@ impl Parser {
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.lexer.advance();
-        let mut condition = AbstractSyntaxTree::Literal(Variable::from(true));
+        let mut condition = AbstractSyntaxTree::Literal(Literal::from(true));
 
         if TokenKind::Keyword(Keyword::While) == self.lexer.get_current_token().kind {
             self.lexer.advance();
@@ -177,7 +177,7 @@ impl Parser {
         let parameters = SeperatedStatements::new(Comma, OpenParanthesis, parameters);
         let function = Function::new(function_block, parameters);
         let function = DataType::Function(Arc::new(function));
-        let function = Variable::from(function);
+        let function = Literal::from(function);
         Ok(AbstractSyntaxTree::Literal(function))
     }
 
@@ -598,7 +598,7 @@ fn handle_mutable_assignment(
                     Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
                     block.add_symbol(
                         variable_name.to_string(),
-                        Variable::new_mutable(DataType::InternalUndefined),
+                        Literal::new_mutable(DataType::InternalUndefined),
                     );
                 } else {
                     // variable_name = old_expression
@@ -609,7 +609,7 @@ fn handle_mutable_assignment(
                 // `mutable` variable_name = expression
                 block.add_symbol(
                     variable_name.to_string(),
-                    Variable::new_mutable(DataType::InternalUndefined),
+                    Literal::new_mutable(DataType::InternalUndefined),
                 );
             }
 
@@ -629,7 +629,7 @@ fn handle_mutable_assignment(
                     Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
                     block.add_symbol(
                         variable_name.to_string(),
-                        Variable::new_mutable(DataType::InternalUndefined),
+                        Literal::new_mutable(DataType::InternalUndefined),
                     );
                 } else {
                     // variable_name operator expression
@@ -638,7 +638,7 @@ fn handle_mutable_assignment(
                 }
                 block.add_symbol(
                     variable_name.to_string(),
-                    Variable::new_mutable(block.get_symbol(variable_name).unwrap().value),
+                    Literal::new_mutable(block.get_symbol(variable_name).unwrap().value),
                 );
             } else {
                 return Err(CompilerError::UndefinedVariable(variable_name.to_string()));

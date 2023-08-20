@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
 use crate::common::errors::CompilerError;
+use crate::common::literal::Literal;
 use crate::common::operators::Arithmetic::*;
-use crate::common::variables::Variable;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Assingment {
     Simple,
@@ -30,7 +30,7 @@ impl Display for Assingment {
 }
 
 impl Assingment {
-    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Result<Literal, CompilerError> {
         match self {
             Assingment::Simple => Err(CompilerError::InvalidAssignment),
             Assingment::Addition => Addition.evaluate(a, b),

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::token::{Token, TokenKind};
 use crate::common::errors::CompilerError;
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 use crate::lexing::keywords::Keyword;
 use crate::lexing::symbols::Symbol::*;
 
@@ -107,7 +107,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::Literal(Variable::from(number)),
+                        TokenKind::Literal(Literal::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -125,7 +125,7 @@ impl Lexer {
                         }
                     };
                     Token::new(
-                        TokenKind::Literal(Variable::from(number)),
+                        TokenKind::Literal(Literal::from(number)),
                         self.line,
                         self.column - number_as_string.len(),
                     )
@@ -154,7 +154,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::Literal(Variable::from(Arc::new(string.to_string()))),
+                    TokenKind::Literal(Literal::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );
@@ -176,7 +176,7 @@ impl Lexer {
                     ));
                 };
                 let token = Token::new(
-                    TokenKind::Literal(Variable::from(Arc::new(string.to_string()))),
+                    TokenKind::Literal(Literal::from(Arc::new(string.to_string()))),
                     self.line,
                     self.column - string.len(),
                 );

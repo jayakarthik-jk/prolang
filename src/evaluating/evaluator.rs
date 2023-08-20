@@ -2,12 +2,12 @@ use std::sync::{Arc, RwLock};
 
 use crate::common::datatypes::DataType;
 use crate::common::errors::CompilerError;
+use crate::common::literal::Literal;
 use crate::common::operators::arithmetic::Arithmetic::*;
 use crate::common::operators::assignment::Assingment;
 use crate::common::operators::logical::Logical::Not;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
-use crate::common::variables::Variable;
 use crate::lexing::symbols::Symbol;
 use crate::parsing::ast::AbstractSyntaxTree;
 use crate::parsing::block::Block;
@@ -28,7 +28,7 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    pub(crate) fn evaluate(&self) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self) -> Result<Literal, CompilerError> {
         evaluate(self.statement, Arc::clone(&self.global_block))
     }
 }
@@ -36,7 +36,7 @@ impl<'a> Evaluator<'a> {
 fn evaluate(
     statement: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     match statement {
         AbstractSyntaxTree::Literal(literal) => Ok(literal.clone()),
         AbstractSyntaxTree::BinaryExpression(left, operator, right) => {
@@ -83,7 +83,7 @@ fn evalute_call_statement(
     name: String,
     arguements: &SeperatedStatements<Box<AbstractSyntaxTree>>,
     block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     if Symbol::OpenParanthesis != arguements.enclosed_with {
         return Err(CompilerError::InvalidEncloser(arguements.enclosed_with));
     }
@@ -91,7 +91,7 @@ fn evalute_call_statement(
         return Err(CompilerError::InvalidSeperator(arguements.seperated_with));
     }
 
-    let mut evaluated_arguements: Vec<Variable> = vec![];
+    let mut evaluated_arguements: Vec<Literal> = vec![];
     for arguement in arguements.iter() {
         let evaluated_arguement = evaluate(arguement, Arc::clone(&block))?;
         evaluated_arguements.push(evaluated_arguement);
@@ -134,9 +134,9 @@ fn evaluate_loop_statement(
     condition_statement: &AbstractSyntaxTree,
     block_or_statement_to_execute: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     let mut condition = evaluate(condition_statement, Arc::clone(&block))?;
-    let mut result = Variable::from(false);
+    let mut result = Literal::from(false);
     while condition.is_truthy() {
         result = evaluate(block_or_statement_to_execute, Arc::clone(&block))?;
         condition = evaluate(condition_statement, Arc::clone(&block))?;
@@ -149,19 +149,19 @@ fn evaluate_if_statement(
     if_block_or_statement: &AbstractSyntaxTree,
     else_statement: &Option<Box<AbstractSyntaxTree>>,
     scope_block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     let condition = evaluate(condition, Arc::clone(&scope_block))?;
     if condition.is_truthy() {
         evaluate(if_block_or_statement, Arc::clone(&scope_block))
     } else if let Some(else_block) = else_statement {
         evaluate(else_block, scope_block)
     } else {
-        Ok(Variable::from(false))
+        Ok(Literal::from(false))
     }
 }
 
-fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Variable, CompilerError> {
-    let mut result = Variable::from(false);
+fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Literal, CompilerError> {
+    let mut result = Literal::from(false);
     for statement in block.read().unwrap().statements.iter() {
         result = evaluate(statement, Arc::clone(&block))?;
     }
@@ -174,7 +174,7 @@ fn evaluate_assignment_expression(
     operator: &Operator,
     expression: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     let right_hand = evaluate(expression, Arc::clone(&block))?;
     let block = block.read().unwrap();
     match operator {
@@ -213,7 +213,7 @@ fn evaluate_unary_expression(
     operator: &Operator,
     expression: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     match operator {
         Arithmetic(operator) => match operator {
             Addition => Ok(Addition.evaluate_unary(evaluate(expression, block)?)?),
@@ -237,7 +237,7 @@ fn evaluate_binary_expression(
     block: Arc<RwLock<Block>>,
     right: &AbstractSyntaxTree,
     operator: &Operator,
-) -> Result<Variable, CompilerError> {
+) -> Result<Literal, CompilerError> {
     let left = evaluate(left, Arc::clone(&block))?;
     let right = evaluate(right, block)?;
     let result = match operator {

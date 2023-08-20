@@ -1,8 +1,8 @@
 use std::fmt::Display;
 use std::sync::{Arc, RwLock};
 
+use crate::common::literal::Literal;
 use crate::common::operators::Operator;
-use crate::common::variables::Variable;
 
 use super::block::Block;
 use super::seperated_statements::SeperatedStatements;
@@ -10,7 +10,7 @@ use super::seperated_statements::SeperatedStatements;
 #[derive(Debug)]
 pub(crate) enum AbstractSyntaxTree {
     // Factors
-    Literal(Variable),
+    Literal(Literal),
     Identifier(String),
     // Object(SeperatedStatements<KeyValuePair>),
     // Expressions

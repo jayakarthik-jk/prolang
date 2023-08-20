@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 
 use super::{keywords::Keyword, symbols::Symbol};
 
@@ -25,7 +25,7 @@ impl Display for Token {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
-    Literal(Variable),
+    Literal(Literal),
     /// number of whitespace
     Whitespace(usize),
     NewLine,

@@ -1,28 +1,28 @@
 use std::{io::Write, sync::Arc};
 
 use crate::common::errors::CompilerError;
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 use std::io::{stdin, stdout};
 
-type BuiltInFunction = fn(Vec<Variable>) -> Result<Variable, CompilerError>;
+type BuiltInFunction = fn(Vec<Literal>) -> Result<Literal, CompilerError>;
 lazy_static::lazy_static! {
     static ref GLOBAL_PROPERTIES: Arc<Vec<BuiltInAttributes>> = Arc::new(vec![
         BuiltInAttributes::BuiltInFunctions("print".to_string(), print),
         BuiltInAttributes::BuiltInFunctions("input".to_string(), input),
-        BuiltInAttributes::BuiltInProperties("lucky".to_string(), Variable::from(7))
+        BuiltInAttributes::BuiltInProperties("lucky".to_string(), Literal::from(7))
     ]);
 }
 
-fn print(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
+fn print(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
     for variable in variables.iter() {
         print!("{}", variable);
         stdout().flush().unwrap();
     }
     println!();
-    Ok(Variable::from(true))
+    Ok(Literal::from(true))
 }
 
-fn input(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
+fn input(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
     for variable in variables.iter() {
         print!("{}", variable);
         stdout().flush().unwrap();
@@ -32,12 +32,12 @@ fn input(variables: Vec<Variable>) -> Result<Variable, CompilerError> {
     let mut buffer = String::new();
     stdin.read_line(&mut buffer).unwrap();
     buffer = buffer.replace('\n', "");
-    Ok(Variable::from(buffer))
+    Ok(Literal::from(buffer))
 }
 
 enum BuiltInAttributes {
     BuiltInFunctions(String, BuiltInFunction),
-    BuiltInProperties(String, Variable),
+    BuiltInProperties(String, Literal),
 }
 
 pub(crate) struct GlobalProperties;
@@ -53,7 +53,7 @@ impl GlobalProperties {
         }
         None
     }
-    pub(crate) fn get_built_in_properties(name: &str) -> Option<Variable> {
+    pub(crate) fn get_built_in_properties(name: &str) -> Option<Literal> {
         for property in GLOBAL_PROPERTIES.iter() {
             if let BuiltInAttributes::BuiltInProperties(property_name, property_value) = property {
                 if name == property_name {

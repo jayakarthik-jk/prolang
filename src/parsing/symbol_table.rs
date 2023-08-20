@@ -1,9 +1,9 @@
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Default)]
 pub(crate) struct SymbolTable {
-    table: HashMap<String, Variable>,
+    table: HashMap<String, Literal>,
 }
 
 impl SymbolTable {
@@ -13,7 +13,7 @@ impl SymbolTable {
         }
     }
 
-    pub(crate) fn add(&mut self, name: String, value: Variable) {
+    pub(crate) fn add(&mut self, name: String, value: Literal) {
         self.table.insert(name, value);
     }
 
@@ -21,7 +21,7 @@ impl SymbolTable {
         self.table.contains_key(name)
     }
 
-    pub(crate) fn get(&self, name: &str) -> Option<Variable> {
+    pub(crate) fn get(&self, name: &str) -> Option<Literal> {
         self.table.get(name).cloned()
     }
 

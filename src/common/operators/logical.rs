@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::common::datatypes::DataType::*;
 use crate::common::errors::CompilerError;
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Logical {
@@ -25,7 +25,7 @@ impl Display for Logical {
 }
 
 impl Logical {
-    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Variable {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Literal {
         match self {
             Logical::And => {
                 if !a.is_truthy() {
@@ -41,23 +41,23 @@ impl Logical {
                     b
                 }
             }
-            Logical::Xor => Variable::from(a.is_truthy() ^ b.is_truthy()),
-            _ => Variable::from(false),
+            Logical::Xor => Literal::from(a.is_truthy() ^ b.is_truthy()),
+            _ => Literal::from(false),
         }
     }
 
-    pub(crate) fn evaluate_unary(&self, variable: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate_unary(&self, variable: Literal) -> Result<Literal, CompilerError> {
         let result = match self {
             Logical::Not => match variable.value {
-                Boolean(value) => Variable::from(!value),
-                String(value) => Variable::from(value.len() > 0),
-                Float(value) => Variable::from(value != 0.0),
-                Integer(value) => Variable::from(value != 0),
-                Infinity => Variable::from(Infinity),
+                Boolean(value) => Literal::from(!value),
+                String(value) => Literal::from(value.len() > 0),
+                Float(value) => Literal::from(value != 0.0),
+                Integer(value) => Literal::from(value != 0),
+                Infinity => Literal::from(Infinity),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
                 Function(_) => return Err(CompilerError::OperationOnFunction),
             },
-            _ => Variable::from(false),
+            _ => Literal::from(false),
         };
         Ok(result)
     }

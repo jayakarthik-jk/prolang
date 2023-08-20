@@ -1,6 +1,6 @@
 use std::{fmt::Display, sync::Arc};
 
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 use crate::common::{datatypes::DataType::*, errors::CompilerError};
 
 use self::Arithmetic::*;
@@ -30,7 +30,7 @@ impl Display for Arithmetic {
 }
 
 impl Arithmetic {
-    pub(crate) fn evaluate(&self, a: Variable, b: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Result<Literal, CompilerError> {
         match self {
             Addition => Self::add(a, b),
             Subtraction => Self::sub(a, b),
@@ -41,30 +41,30 @@ impl Arithmetic {
         }
     }
 
-    pub(crate) fn evaluate_unary(&self, variable: Variable) -> Result<Variable, CompilerError> {
+    pub(crate) fn evaluate_unary(&self, variable: Literal) -> Result<Literal, CompilerError> {
         let result = match self {
             Addition => match variable.value {
                 String(a) => {
                     let result: f64 = match a.parse() {
                         Ok(a) => a,
                         Err(_) => {
-                            return Err(CompilerError::InvalidStringParsing(Variable::from(
+                            return Err(CompilerError::InvalidStringParsing(Literal::from(
                                 a.clone(),
                             )))
                         }
                     };
                     if result.fract() == 0.0 {
-                        Variable::from(result as i128)
+                        Literal::from(result as i128)
                     } else {
-                        Variable::from(result)
+                        Literal::from(result)
                     }
                 }
-                a => Variable::from(a),
+                a => Literal::from(a),
             },
             Subtraction => match variable.value {
-                Float(a) => Variable::from(-a),
-                Integer(a) => Variable::from(-a),
-                Boolean(a) => Variable::from(if a { -1 } else { 0 }),
+                Float(a) => Literal::from(-a),
+                Integer(a) => Literal::from(-a),
+                Boolean(a) => Literal::from(if a { -1 } else { 0 }),
                 Infinity => variable,
                 String(_) => return Err(CompilerError::InvalidUneryOperation),
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
@@ -79,35 +79,35 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn add(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn add(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
-            (String(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (String(a), Float(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (String(a), Integer(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (String(a), Boolean(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (String(a), Infinity) => Variable::from(Arc::new(format!("{a}infinity"))),
+            (String(a), String(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Float(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Integer(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Boolean(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (String(a), Infinity) => Literal::from(Arc::new(format!("{a}infinity"))),
 
-            (Float(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (Float(a), Float(b)) => Variable::from(a + b),
-            (Float(a), Integer(b)) => Variable::from(a + b as f64),
-            (Float(a), Boolean(b)) => Variable::from(if b { a + 1.0 } else { a }),
+            (Float(a), String(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (Float(a), Float(b)) => Literal::from(a + b),
+            (Float(a), Integer(b)) => Literal::from(a + b as f64),
+            (Float(a), Boolean(b)) => Literal::from(if b { a + 1.0 } else { a }),
 
-            (Integer(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (Integer(a), Float(b)) => Variable::from(a as f64 + b),
-            (Integer(a), Integer(b)) => Variable::from(a + b),
-            (Integer(a), Boolean(b)) => Variable::from(if b { a + 1 } else { a }),
+            (Integer(a), String(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (Integer(a), Float(b)) => Literal::from(a as f64 + b),
+            (Integer(a), Integer(b)) => Literal::from(a + b),
+            (Integer(a), Boolean(b)) => Literal::from(if b { a + 1 } else { a }),
 
-            (Boolean(a), String(b)) => Variable::from(Arc::new(format!("{a}{b}"))),
-            (Boolean(a), Float(b)) => Variable::from(if a { b + 1.0 } else { b }),
-            (Boolean(a), Integer(b)) => Variable::from(if a { b + 1 } else { b }),
-            (Boolean(a), Boolean(b)) => Variable::from(match (a, b) {
+            (Boolean(a), String(b)) => Literal::from(Arc::new(format!("{a}{b}"))),
+            (Boolean(a), Float(b)) => Literal::from(if a { b + 1.0 } else { b }),
+            (Boolean(a), Integer(b)) => Literal::from(if a { b + 1 } else { b }),
+            (Boolean(a), Boolean(b)) => Literal::from(match (a, b) {
                 (true, true) => 2,
                 (false, false) => 0,
                 _ => 1,
             }),
-            (Infinity, String(a)) => Variable::from(Arc::new(format!("infinity{a}"))),
+            (Infinity, String(a)) => Literal::from(Arc::new(format!("infinity{a}"))),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
-            (_, Infinity) | (Infinity, _) => Variable::from(Infinity),
+            (_, Infinity) | (Infinity, _) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -115,32 +115,32 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn sub(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn sub(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
             (String(left), right) | (right, String(left)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(left),
+                    Literal::from(left),
                     Operator::Arithmetic(Subtraction),
-                    Variable::from(right),
+                    Literal::from(right),
                 ))
             }
 
-            (Float(a), Float(b)) => Variable::from(a - b),
-            (Float(a), Integer(b)) => Variable::from(a - b as f64),
-            (Float(a), Boolean(b)) => Variable::from(if b { a - 1.0 } else { a }),
+            (Float(a), Float(b)) => Literal::from(a - b),
+            (Float(a), Integer(b)) => Literal::from(a - b as f64),
+            (Float(a), Boolean(b)) => Literal::from(if b { a - 1.0 } else { a }),
 
-            (Integer(a), Float(b)) => Variable::from(a as f64 - b),
-            (Integer(a), Integer(b)) => Variable::from(a - b),
-            (Integer(a), Boolean(b)) => Variable::from(if b { a - 1 } else { a }),
-            (Boolean(a), Float(b)) => Variable::from(if a { b - 1.0 } else { b }),
-            (Boolean(a), Integer(b)) => Variable::from(if a { b - 1 } else { b }),
-            (Boolean(a), Boolean(b)) => Variable::from(match (a, b) {
+            (Integer(a), Float(b)) => Literal::from(a as f64 - b),
+            (Integer(a), Integer(b)) => Literal::from(a - b),
+            (Integer(a), Boolean(b)) => Literal::from(if b { a - 1 } else { a }),
+            (Boolean(a), Float(b)) => Literal::from(if a { b - 1.0 } else { b }),
+            (Boolean(a), Integer(b)) => Literal::from(if a { b - 1 } else { b }),
+            (Boolean(a), Boolean(b)) => Literal::from(match (a, b) {
                 (true, false) => 1,
                 (false, true) => -1,
                 _ => 0,
             }),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
-            (Infinity, _) | (_, Infinity) => Variable::from(Infinity),
+            (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -148,13 +148,13 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn mul(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn mul(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
             (String(a), String(b)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(a),
+                    Literal::from(a),
                     Operator::Arithmetic(Multiplication),
-                    Variable::from(b),
+                    Literal::from(b),
                 ))
             }
             (String(a), Float(b)) => {
@@ -162,41 +162,41 @@ impl Arithmetic {
                 for _ in 0..b as i128 {
                     result += &a;
                 }
-                Variable::from(Arc::new(result))
+                Literal::from(Arc::new(result))
             }
             (String(a), Integer(b)) => {
                 let mut result = "".to_string();
                 for _ in 0..b {
                     result += &a;
                 }
-                Variable::from(Arc::new(result))
+                Literal::from(Arc::new(result))
             }
-            (String(a), Boolean(b)) => Variable::from(if b { a } else { Arc::new("".to_string()) }),
+            (String(a), Boolean(b)) => Literal::from(if b { a } else { Arc::new("".to_string()) }),
             (Float(a), String(b)) => {
                 let mut result = "".to_string();
                 for _ in 0..a as i128 {
                     result += &b;
                 }
-                Variable::from(Arc::new(result))
+                Literal::from(Arc::new(result))
             }
-            (Float(a), Float(b)) => Variable::from(a * b),
-            (Float(a), Integer(b)) => Variable::from(a * b as f64),
-            (Float(a), Boolean(b)) => Variable::from(if b { a } else { 0.0 }),
+            (Float(a), Float(b)) => Literal::from(a * b),
+            (Float(a), Integer(b)) => Literal::from(a * b as f64),
+            (Float(a), Boolean(b)) => Literal::from(if b { a } else { 0.0 }),
             (Integer(a), String(b)) => {
                 let mut result = "".to_string();
                 for _ in 0..a {
                     result += &b;
                 }
-                Variable::from(Arc::new(result))
+                Literal::from(Arc::new(result))
             }
-            (Integer(a), Float(b)) => Variable::from(a as f64 * b),
-            (Integer(a), Integer(b)) => Variable::from(a * b),
+            (Integer(a), Float(b)) => Literal::from(a as f64 * b),
+            (Integer(a), Integer(b)) => Literal::from(a * b),
 
-            (Integer(a), Boolean(b)) => Variable::from(if b { a } else { 0 }),
-            (Boolean(a), String(b)) => Variable::from(if a { b } else { Arc::new("".to_string()) }),
-            (Boolean(a), Float(b)) => Variable::from(if a { b } else { 0.0 }),
-            (Boolean(a), Integer(b)) => Variable::from(if a { b } else { 0 }),
-            (Boolean(a), Boolean(b)) => Variable::from(if a == b {
+            (Integer(a), Boolean(b)) => Literal::from(if b { a } else { 0 }),
+            (Boolean(a), String(b)) => Literal::from(if a { b } else { Arc::new("".to_string()) }),
+            (Boolean(a), Float(b)) => Literal::from(if a { b } else { 0.0 }),
+            (Boolean(a), Integer(b)) => Literal::from(if a { b } else { 0 }),
+            (Boolean(a), Boolean(b)) => Literal::from(if a == b {
                 if a {
                     1
                 } else {
@@ -207,13 +207,13 @@ impl Arithmetic {
             }),
             (String(left), Infinity) | (Infinity, String(left)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(Infinity),
+                    Literal::from(Infinity),
                     Operator::Arithmetic(Multiplication),
-                    Variable::from(left),
+                    Literal::from(left),
                 ))
             }
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
-            (Infinity, _) | (_, Infinity) => Variable::from(Infinity),
+            (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
             }
@@ -221,30 +221,30 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn div(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn div(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
             (String(_), _) | (_, String(_)) => return Err(CompilerError::MathUndefined),
             (Float(a), Float(b)) => {
                 if b == 0.0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a / b)
+                    Literal::from(a / b)
                 }
             }
             (Float(a), Integer(b)) => {
                 if b == 0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a / b as f64)
+                    Literal::from(a / b as f64)
                 }
             }
             (Infinity, Boolean(b)) => {
                 if b {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
                     return Err(CompilerError::MathUndefined);
                 }
@@ -252,74 +252,74 @@ impl Arithmetic {
             (Boolean(a), Boolean(b)) => {
                 if b {
                     if a {
-                        Variable::from(1.0)
+                        Literal::from(1.0)
                     } else {
-                        Variable::from(0.0)
+                        Literal::from(0.0)
                     }
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (Float(a), Boolean(b)) => {
                 if b {
-                    Variable::from(a)
+                    Literal::from(a)
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (Integer(a), Boolean(b)) => {
                 if b {
-                    Variable::from(a as f64)
+                    Literal::from(a as f64)
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (Integer(a), Float(b)) => {
                 if b == 0.0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a as f64 / b)
+                    Literal::from(a as f64 / b)
                 }
             }
             (Integer(a), Integer(b)) => {
                 if b == 0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(a)
+                    Literal::from(a)
                 } else {
-                    Variable::from(a as f64 / b as f64)
+                    Literal::from(a as f64 / b as f64)
                 }
             }
             (Boolean(a), Float(b)) => {
                 if a {
-                    Division.evaluate(Variable::from(1.0), Variable::from(b))?
+                    Division.evaluate(Literal::from(1.0), Literal::from(b))?
                 } else {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 }
             }
             (Boolean(a), Integer(b)) => Division.evaluate(
-                Variable::from(if a { 1.0 } else { 0.0 }),
-                Variable::from(b as f64),
+                Literal::from(if a { 1.0 } else { 0.0 }),
+                Literal::from(b as f64),
             )?,
             (Float(a), Infinity) => {
                 if a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 }
             }
             (Integer(a), Infinity) => {
                 if a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 }
             }
             (Boolean(a), Infinity) => {
                 if a {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 } else {
                     return Err(CompilerError::MathUndefined);
                 }
@@ -328,14 +328,14 @@ impl Arithmetic {
                 if a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (Infinity, Integer(a)) => {
                 if a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(a)
+                    Literal::from(a)
                 }
             }
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
@@ -347,61 +347,61 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn modulo(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn modulo(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
             (String(a), b) | (b, String(a)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(a),
+                    Literal::from(a),
                     Operator::Arithmetic(Modulo),
-                    Variable::from(b),
+                    Literal::from(b),
                 ))
             }
             (Float(a), Float(b)) => {
                 if b == 0.0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a % b)
+                    Literal::from(a % b)
                 }
             }
             (Float(a), Integer(b)) => {
                 if b == 0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a % b as f64)
+                    Literal::from(a % b as f64)
                 }
             }
             (Infinity, Boolean(a)) => {
                 if a {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
                     return Err(CompilerError::MathUndefined);
                 }
             }
             (Integer(a), Boolean(b)) => {
                 if b {
-                    Modulo.evaluate(Variable::from(a), Variable::from(1))?
+                    Modulo.evaluate(Literal::from(a), Literal::from(1))?
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
 
             (Boolean(_), Boolean(b)) => {
                 if b {
-                    Variable::from(0)
+                    Literal::from(0)
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
 
             (Float(a), Boolean(b)) => {
                 if b {
-                    Modulo.evaluate(Variable::from(a), Variable::from(1))?
+                    Modulo.evaluate(Literal::from(a), Literal::from(1))?
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
 
@@ -409,56 +409,56 @@ impl Arithmetic {
                 if b == 0.0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a as f64 % b)
+                    Literal::from(a as f64 % b)
                 }
             }
             (Integer(a), Integer(b)) => {
                 if b == 0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
-                    Variable::from(a % b)
+                    Literal::from(a % b)
                 }
             }
             (Boolean(a), Float(b)) => {
                 if a {
-                    Modulo.evaluate(Variable::from(1.0), Variable::from(b))?
+                    Modulo.evaluate(Literal::from(1.0), Literal::from(b))?
                 } else {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 }
             }
             (Boolean(a), Integer(b)) => {
-                Modulo.evaluate(Variable::from(if a { 1 } else { 0 }), Variable::from(b))?
+                Modulo.evaluate(Literal::from(if a { 1 } else { 0 }), Literal::from(b))?
             }
             (Float(a), Infinity) => {
                 if a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(a)
+                    Literal::from(a)
                 }
             }
             (Integer(a), Infinity) => {
                 if a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(a)
+                    Literal::from(a)
                 }
             }
             (Boolean(a), Infinity) => {
                 if a {
-                    Variable::from(0)
+                    Literal::from(0)
                 } else {
                     return Err(CompilerError::MathUndefined);
                 }
             }
             (Infinity, a) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(Infinity),
+                    Literal::from(Infinity),
                     Operator::Arithmetic(Modulo),
-                    Variable::from(a),
+                    Literal::from(a),
                 ))
             }
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
@@ -469,45 +469,45 @@ impl Arithmetic {
         Ok(result)
     }
 
-    fn power(variable1: Variable, variable2: Variable) -> Result<Variable, CompilerError> {
+    fn power(variable1: Literal, variable2: Literal) -> Result<Literal, CompilerError> {
         let result = match (variable1.value, variable2.value) {
             (String(a), b) | (b, String(a)) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(a),
+                    Literal::from(a),
                     Operator::Arithmetic(Exponentiation),
-                    Variable::from(b),
+                    Literal::from(b),
                 ))
             }
             (Float(a), Float(b)) => {
                 if b == 0.0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(1.0)
+                    Literal::from(1.0)
                 } else {
-                    Variable::from(a.powf(b))
+                    Literal::from(a.powf(b))
                 }
             }
             (Float(a), Integer(b)) => {
                 if b == 0 && a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(1.0)
+                    Literal::from(1.0)
                 } else {
-                    Variable::from(a.powf(b as f64))
+                    Literal::from(a.powf(b as f64))
                 }
             }
             (Infinity, Boolean(b)) => {
                 if b {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 } else {
                     return Err(CompilerError::MathUndefined);
                 }
             }
             (a, Boolean(b)) => {
                 if b {
-                    Exponentiation.evaluate(Variable::from(a), Variable::from(1))?
+                    Exponentiation.evaluate(Literal::from(a), Literal::from(1))?
                 } else {
-                    Exponentiation.evaluate(Variable::from(a), Variable::from(0))?
+                    Exponentiation.evaluate(Literal::from(a), Literal::from(0))?
                 }
             }
 
@@ -515,54 +515,54 @@ impl Arithmetic {
                 if b == 0.0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0.0 {
-                    Variable::from(1.0)
+                    Literal::from(1.0)
                 } else {
-                    Variable::from((a as f64).powf(b))
+                    Literal::from((a as f64).powf(b))
                 }
             }
             (Integer(a), Integer(b)) => {
                 if b == 0 && a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else if b == 0 {
-                    Variable::from(1)
+                    Literal::from(1)
                 } else {
                     let result = (a as f64).powf(b as f64);
                     if result.fract() == 0.0 {
-                        Variable::from(result as i128)
+                        Literal::from(result as i128)
                     } else {
-                        Variable::from(result)
+                        Literal::from(result)
                     }
                 }
             }
             (Boolean(a), Float(b)) => {
                 if a {
-                    Exponentiation.evaluate(Variable::from(1.0), Variable::from(b))?
+                    Exponentiation.evaluate(Literal::from(1.0), Literal::from(b))?
                 } else {
-                    Variable::from(0.0)
+                    Literal::from(0.0)
                 }
             }
             (Boolean(a), Integer(b)) => {
-                Exponentiation.evaluate(Variable::from(if a { 1 } else { 0 }), Variable::from(b))?
+                Exponentiation.evaluate(Literal::from(if a { 1 } else { 0 }), Literal::from(b))?
             }
             (a, Infinity) => {
                 return Err(CompilerError::UnsupportedOperationBetween(
-                    Variable::from(a),
+                    Literal::from(a),
                     Operator::Arithmetic(Exponentiation),
-                    Variable::from(Infinity),
+                    Literal::from(Infinity),
                 ))
             }
             (Infinity, Float(a)) => {
                 if a == 0.0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (Infinity, Integer(a)) => {
                 if a == 0 {
                     return Err(CompilerError::MathUndefined);
                 } else {
-                    Variable::from(Infinity)
+                    Literal::from(Infinity)
                 }
             }
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),

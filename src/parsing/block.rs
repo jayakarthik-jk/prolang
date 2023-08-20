@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use super::ast::AbstractSyntaxTree;
 use super::symbol_table::SymbolTable;
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 
 #[derive(Debug, Default)]
 pub(crate) struct Block {
@@ -21,7 +21,7 @@ impl Block {
         }
     }
 
-    pub(crate) fn add_symbol(&self, name: String, value: Variable) {
+    pub(crate) fn add_symbol(&self, name: String, value: Literal) {
         if self
             .update_parent_symbol(name.clone(), value.clone())
             .is_none()
@@ -30,7 +30,7 @@ impl Block {
         }
     }
 
-    fn update_symbol(&self, name: String, value: Variable) {
+    fn update_symbol(&self, name: String, value: Literal) {
         self.symbols.lock().unwrap().add(name, value)
     }
 
@@ -38,7 +38,7 @@ impl Block {
         self.symbols.lock().unwrap().contains(name)
     }
 
-    fn update_parent_symbol(&self, name: String, value: Variable) -> Option<()> {
+    fn update_parent_symbol(&self, name: String, value: Literal) -> Option<()> {
         if self.current_contains_symbol(&name) {
             self.update_symbol(name, value);
             Some(())
@@ -59,7 +59,7 @@ impl Block {
         }
     }
 
-    pub(crate) fn get_symbol(&self, name: &str) -> Option<Variable> {
+    pub(crate) fn get_symbol(&self, name: &str) -> Option<Literal> {
         if let Some(variable) = self.symbols.lock().unwrap().get(name) {
             Some(variable)
         } else if let Some(parent) = self.parent.as_ref() {

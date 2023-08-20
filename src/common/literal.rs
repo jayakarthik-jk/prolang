@@ -3,12 +3,12 @@ use std::{fmt::Display, sync::Arc};
 use super::datatypes::DataType;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Variable {
+pub struct Literal {
     pub(crate) value: DataType,
     mutability: bool,
 }
 
-impl Variable {
+impl Literal {
     pub(crate) fn is_truthy(&self) -> bool {
         match self.clone().value {
             DataType::String(a) => !a.is_empty(),
@@ -49,7 +49,7 @@ impl Variable {
     }
 }
 
-impl From<Arc<String>> for Variable {
+impl From<Arc<String>> for Literal {
     fn from(value: Arc<String>) -> Self {
         Self {
             value: DataType::String(value),
@@ -58,7 +58,7 @@ impl From<Arc<String>> for Variable {
     }
 }
 
-impl From<String> for Variable {
+impl From<String> for Literal {
     fn from(value: String) -> Self {
         Self {
             value: DataType::String(Arc::new(value)),
@@ -67,7 +67,7 @@ impl From<String> for Variable {
     }
 }
 
-impl From<i128> for Variable {
+impl From<i128> for Literal {
     fn from(value: i128) -> Self {
         Self {
             value: DataType::Integer(value),
@@ -75,7 +75,7 @@ impl From<i128> for Variable {
         }
     }
 }
-impl From<bool> for Variable {
+impl From<bool> for Literal {
     fn from(value: bool) -> Self {
         Self {
             value: DataType::Boolean(value),
@@ -83,7 +83,7 @@ impl From<bool> for Variable {
         }
     }
 }
-impl From<f64> for Variable {
+impl From<f64> for Literal {
     fn from(value: f64) -> Self {
         Self {
             value: DataType::Float(value),
@@ -91,7 +91,7 @@ impl From<f64> for Variable {
         }
     }
 }
-impl From<DataType> for Variable {
+impl From<DataType> for Literal {
     fn from(value: DataType) -> Self {
         Self {
             value,
@@ -100,7 +100,7 @@ impl From<DataType> for Variable {
     }
 }
 
-impl Display for Variable {
+impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self.clone().value {
             DataType::String(a) => a.to_string(),

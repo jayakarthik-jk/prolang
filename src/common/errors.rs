@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use colored::Colorize;
 
+use crate::common::literal::Literal;
 use crate::common::operators::Operator;
-use crate::common::variables::Variable;
 use crate::lexing::symbols::Symbol;
 use crate::lexing::token::TokenKind;
 
@@ -37,9 +37,9 @@ pub enum CompilerError {
     UndefinedFunction(String),
     InvalidExpressionAssignment,
     InvalidAssignment,
-    InvalidStringParsing(Variable),
+    InvalidStringParsing(Literal),
     InvalidUneryOperation,
-    UnsupportedOperationBetween(Variable, Operator, Variable),
+    UnsupportedOperationBetween(Literal, Operator, Literal),
     MathUndefined,
     OperationOnUndefined,
     InvalidUseOfMutableKeyword,

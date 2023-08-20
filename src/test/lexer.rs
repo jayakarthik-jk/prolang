@@ -10,7 +10,7 @@ fn get_lexer(source: String) -> crate::lexing::lexer::Lexer {
 #[test]
 
 fn arithmetic_expressions() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::symbols::Symbol::*;
     use crate::lexing::token::TokenKind::*;
 
@@ -19,39 +19,39 @@ fn arithmetic_expressions() {
 
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Plus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Minus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Slash));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(6))
+        Literal(Literal::from(6))
     );
 }
 
 #[test]
 fn paranthesized_arithmetic_expression() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::symbols::Symbol::*;
     use crate::lexing::symbols::Symbol::{CloseParanthesis, OpenParanthesis};
     use crate::lexing::token::TokenKind::*;
@@ -64,12 +64,12 @@ fn paranthesized_arithmetic_expression() {
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Plus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -78,24 +78,24 @@ fn paranthesized_arithmetic_expression() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Minus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Slash));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
 }
 
 // test for relational operators
 #[test]
 fn relational_expression() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::symbols::Symbol::*;
     use crate::lexing::token::TokenKind::*;
     let source = "1 < 2 <= 3 > 4 >= 5 == 6 != 7".to_string();
@@ -103,18 +103,18 @@ fn relational_expression() {
 
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(LessThan));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(LessThan));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -122,7 +122,7 @@ fn relational_expression() {
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -131,13 +131,13 @@ fn relational_expression() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(6))
+        Literal(Literal::from(6))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -146,14 +146,14 @@ fn relational_expression() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(7))
+        Literal(Literal::from(7))
     );
 }
 
 // test for logical operators
 #[test]
 fn logical_expression() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::keywords::Keyword::*;
     use crate::lexing::token::TokenKind::*;
     let source = "1 and 2 or 3 xor 4 not 5".to_string();
@@ -161,34 +161,34 @@ fn logical_expression() {
 
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(And));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Or));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Xor));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Not));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
 }
 
 // test for assignment operators
 #[test]
 fn assignment_expression() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::symbols::Symbol::*;
     use crate::lexing::token::TokenKind::*;
 
@@ -197,56 +197,56 @@ fn assignment_expression() {
 
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Plus));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Minus));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Slash));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(6))
+        Literal(Literal::from(6))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Percent));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(7))
+        Literal(Literal::from(7))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(8))
+        Literal(Literal::from(8))
     );
 }
 
 // test for unary operators
 #[test]
 fn all_expressions() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::keywords::Keyword::*;
     use crate::lexing::symbols::Symbol::*;
     use crate::lexing::token::TokenKind::*;
@@ -255,49 +255,49 @@ fn all_expressions() {
 
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Plus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(2))
+        Literal(Literal::from(2))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Minus));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(3))
+        Literal(Literal::from(3))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(4))
+        Literal(Literal::from(4))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Slash));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(5))
+        Literal(Literal::from(5))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Percent));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(6))
+        Literal(Literal::from(6))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(7))
+        Literal(Literal::from(7))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(LessThan));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(8))
+        Literal(Literal::from(8))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(LessThan));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(9))
+        Literal(Literal::from(9))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -305,7 +305,7 @@ fn all_expressions() {
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(10))
+        Literal(Literal::from(10))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -314,13 +314,13 @@ fn all_expressions() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(11))
+        Literal(Literal::from(11))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(12))
+        Literal(Literal::from(12))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -329,69 +329,69 @@ fn all_expressions() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(13))
+        Literal(Literal::from(13))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(And));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(14))
+        Literal(Literal::from(14))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Or));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(15))
+        Literal(Literal::from(15))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Xor));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(16))
+        Literal(Literal::from(16))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Not));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(17))
+        Literal(Literal::from(17))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(18))
+        Literal(Literal::from(18))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Plus));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(19))
+        Literal(Literal::from(19))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Minus));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(20))
+        Literal(Literal::from(20))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(21))
+        Literal(Literal::from(21))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Slash));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(22))
+        Literal(Literal::from(22))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Percent));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(23))
+        Literal(Literal::from(23))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Asterisk));
     assert_eq!(lexer.get_current_token_and_advance().kind, Symbol(Equals));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(24))
+        Literal(Literal::from(24))
     );
 }
 
@@ -413,14 +413,14 @@ fn test_valid_identifiers() {
 
 #[test]
 fn test_invalid_identifiers() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::token::TokenKind::*;
 
     let source = "1abc".to_string();
     let lexer = get_lexer(source);
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(1))
+        Literal(Literal::from(1))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
@@ -430,7 +430,7 @@ fn test_invalid_identifiers() {
 
 #[test]
 fn test_keywords() {
-    use crate::common::variables::Variable;
+    use crate::common::literal::Literal;
     use crate::lexing::keywords::Keyword::*;
     use crate::lexing::token::TokenKind::*;
 
@@ -442,11 +442,11 @@ fn test_keywords() {
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Not));
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(true))
+        Literal(Literal::from(true))
     );
     assert_eq!(
         lexer.get_current_token_and_advance().kind,
-        Literal(Variable::from(false))
+        Literal(Literal::from(false))
     );
     assert_eq!(lexer.get_current_token_and_advance().kind, Keyword(Mutable));
 }

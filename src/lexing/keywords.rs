@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::common::variables::Variable;
+use crate::common::literal::Literal;
 
 use crate::lexing::token::TokenKind::*;
 
@@ -26,8 +26,8 @@ use self::Keyword::*;
 impl Keyword {
     pub(crate) fn get_keyword_kind(keyword: &str) -> TokenKind {
         match keyword {
-            "true" => Literal(Variable::from(true)),
-            "false" => Literal(Variable::from(false)),
+            "true" => Literal(Literal::from(true)),
+            "false" => Literal(Literal::from(false)),
             "is" => Keyword(Is),
             "and" => Keyword(And),
             "or" => Keyword(Or),
