@@ -48,6 +48,8 @@ pub enum CompilerError {
     ArgumentLengthMismatch(String, usize, usize),
     OperationOnReturn,
     ReturnOutsideFunction,
+    BreakOutsideLoop,
+    OperationOnBreak,
 
     // warnings
     Warnings(&'static str),
@@ -145,6 +147,10 @@ impl Display for CompilerError {
             }
             CompilerError::ReturnOutsideFunction => {
                 "return statement outside a function".to_string()
+            }
+            CompilerError::BreakOutsideLoop => "break outside a loop".to_string(),
+            CompilerError::OperationOnBreak => {
+                "cannot perform operation on `break` keyword".to_string()
             }
         };
         write!(f, "{}", text.red())

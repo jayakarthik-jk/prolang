@@ -10,6 +10,7 @@ pub(crate) struct Block {
     pub(crate) parent: Option<Arc<RwLock<Block>>>,
     pub(crate) statements: Vec<AbstractSyntaxTree>,
     pub(crate) is_function: bool,
+    pub(crate) is_loop: bool,
     symbols: Arc<Mutex<SymbolTable>>,
 }
 
@@ -20,6 +21,7 @@ impl Block {
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
             is_function: false,
+            is_loop: false,
         }
     }
 
@@ -83,16 +85,20 @@ impl From<Vec<AbstractSyntaxTree>> for Block {
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
             parent: None,
             is_function: false,
+            is_loop: false,
         }
     }
 }
 
 impl From<Arc<RwLock<Block>>> for Block {
     fn from(parent: Arc<RwLock<Block>>) -> Self {
+        let binding = Arc::clone(&parent);
+        let parent_reference = binding.read().unwrap();
         Self {
             statements: vec![],
             symbols: Arc::new(Mutex::new(SymbolTable::new())),
-            is_function: Arc::clone(&parent).read().unwrap().is_function,
+            is_function: parent_reference.is_function,
+            is_loop: parent_reference.is_loop,
             parent: Some(parent),
         }
     }

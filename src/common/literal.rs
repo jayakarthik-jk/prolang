@@ -1,6 +1,6 @@
 use std::{fmt::Display, sync::Arc};
 
-use super::datatypes::DataType;
+use super::{datatypes::DataType, errors::CompilerError};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Literal {
@@ -13,17 +13,19 @@ impl Literal {
         Self { value, mutability }
     }
 
-    pub(crate) fn is_truthy(&self) -> bool {
-        match self.clone().value {
+    pub(crate) fn is_truthy(&self) -> Result<bool, CompilerError> {
+        let result = match self.clone().value {
             DataType::String(a) => !a.is_empty(),
             DataType::Float(a) => a != 0.0,
             DataType::Integer(a) => a != 0,
             DataType::Boolean(a) => a,
             DataType::Infinity => true,
-            DataType::InternalUndefined => false,
             DataType::Function(_) => true,
-            DataType::Return(_) => false,
-        }
+            DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
+            DataType::Return(_) => return Err(CompilerError::OperationOnReturn),
+            DataType::Break(_) => return Err(CompilerError::OperationOnBreak),
+        };
+        Ok(result)
     }
 
     pub(crate) fn is_mutable(&self) -> bool {
@@ -107,6 +109,7 @@ impl Display for Literal {
             DataType::InternalUndefined => "Undefined".to_string(),
             DataType::Function(_) => "Function".to_string(),
             DataType::Return(_) => "Return".to_string(),
+            DataType::Break(_) => "Break".to_string(),
         };
         write!(f, "{text}")
     }

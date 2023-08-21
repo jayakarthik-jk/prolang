@@ -25,7 +25,7 @@ impl Operator {
         match self {
             Operator::Arithmetic(arithmetic) => arithmetic.evaluate(a, b),
             Operator::Relational(relational) => Ok(relational.evaluate(a, b)),
-            Operator::Logical(logical) => Ok(logical.evaluate(a, b)),
+            Operator::Logical(logical) => Ok(logical.evaluate(a, b)?),
             Operator::Assignment(_) => todo!(),
         }
     }

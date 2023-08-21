@@ -54,8 +54,24 @@ impl Parser {
             }
             TokenKind::Keyword(Keyword::Loop) => self.parse_loop_statement(block),
             TokenKind::Keyword(Keyword::Return) => self.parse_return_statement(block),
+            TokenKind::Keyword(Keyword::Break) => self.parse_break_statement(block),
             _ => self.parse_expression(block),
         }
+    }
+
+    fn parse_break_statement(
+        &self,
+        parent: Arc<RwLock<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.lexer.advance();
+        if TokenKind::NewLine == self.lexer.get_current_token().kind {
+            self.lexer.advance();
+            return Ok(AbstractSyntaxTree::BreakStatement(Box::new(
+                AbstractSyntaxTree::Literal(Literal::from(false)),
+            )));
+        }
+        let returnable = self.parse_statement(parent)?;
+        Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
     }
 
     fn parse_return_statement(
@@ -117,6 +133,7 @@ impl Parser {
         &self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.skip_new_lines();
         Ok(AbstractSyntaxTree::ElseStatement(Box::new(
             self.parse_statement(Arc::clone(&block))?,
         )))

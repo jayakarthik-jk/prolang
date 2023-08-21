@@ -1,21 +1,5 @@
 number = +input("Enter a number: ")
 
-main = () => {
-    divisible_by_3 = (number) => number % 3 == 0
-    divisible_by_5 = (number) => number % 5 == 0
-    divisible_by_7 = (number) => number % 7 == 0
+add = (a, b) => a + b
 
-
-    if divisible_by_3(number) {
-        print("Fizz")
-        return
-    }
-    if divisible_by_5(number) {
-        print("Buzz")
-    }
-    if divisible_by_7(number) {
-        print("Bang")
-    }
-}
-
-main()
+print(add(10, 20))

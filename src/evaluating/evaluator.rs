@@ -77,6 +77,10 @@ fn evaluate(
             DataType::Return(Box::new(evaluate(statement, block)?)),
             false,
         )),
+        AbstractSyntaxTree::BreakStatement(statement) => Ok(Literal::new(
+            DataType::Break(Box::new(evaluate(statement, block)?)),
+            false,
+        )),
     }
 }
 
@@ -134,8 +138,12 @@ fn evaluate_loop_statement(
 ) -> Result<Literal, CompilerError> {
     let mut condition = evaluate(condition_statement, Arc::clone(&block))?;
     let mut result = Literal::from(false);
-    while condition.is_truthy() {
+    while condition.is_truthy()? {
         result = evaluate(block_or_statement_to_execute, Arc::clone(&block))?;
+        if let DataType::Break(statement) = result.value {
+            result = *statement;
+            break;
+        }
         condition = evaluate(condition_statement, Arc::clone(&block))?;
     }
     Ok(result)
@@ -148,7 +156,7 @@ fn evaluate_if_statement(
     scope_block: Arc<RwLock<Block>>,
 ) -> Result<Literal, CompilerError> {
     let condition = evaluate(condition, Arc::clone(&scope_block))?;
-    if condition.is_truthy() {
+    if condition.is_truthy()? {
         evaluate(if_block_or_statement, Arc::clone(&scope_block))
     } else if let Some(else_block) = else_statement {
         evaluate(else_block, scope_block)
@@ -167,6 +175,13 @@ fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Literal, CompilerError> {
                 break;
             } else {
                 return Err(CompilerError::ReturnOutsideFunction);
+            }
+        }
+        if let DataType::Break(_) = result.value {
+            if block.read().unwrap().is_loop {
+                break;
+            } else {
+                return Err(CompilerError::BreakOutsideLoop);
             }
         }
     }

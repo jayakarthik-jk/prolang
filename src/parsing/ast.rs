@@ -29,6 +29,7 @@ pub(crate) enum AbstractSyntaxTree {
     LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
     CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
     ReturnStatement(Box<AbstractSyntaxTree>),
+    BreakStatement(Box<AbstractSyntaxTree>),
 }
 
 impl AbstractSyntaxTree {
@@ -65,6 +66,7 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::LoopStatement(_, _) => "loop until condition {{ }}".to_string(),
             AbstractSyntaxTree::CallStatement(name, _) => format!("Function call: {name}"),
             AbstractSyntaxTree::ReturnStatement(_) => "return".to_string(),
+            AbstractSyntaxTree::BreakStatement(_) => "break".to_string(),
         };
         write!(f, "{output}")
     }

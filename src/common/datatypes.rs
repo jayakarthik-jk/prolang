@@ -13,6 +13,7 @@ pub(crate) enum DataType {
     String(Arc<String>),
     Function(Arc<Function>),
     Return(Box<Literal>),
+    Break(Box<Literal>),
 }
 
 impl PartialEq for DataType {

@@ -25,25 +25,26 @@ impl Display for Logical {
 }
 
 impl Logical {
-    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Literal {
-        match self {
+    pub(crate) fn evaluate(&self, a: Literal, b: Literal) -> Result<Literal, CompilerError> {
+        let result = match self {
             Logical::And => {
-                if !a.is_truthy() {
+                if !a.is_truthy()? {
                     a
                 } else {
                     b
                 }
             }
             Logical::Or => {
-                if a.is_truthy() {
+                if a.is_truthy()? {
                     a
                 } else {
                     b
                 }
             }
-            Logical::Xor => Literal::from(a.is_truthy() ^ b.is_truthy()),
+            Logical::Xor => Literal::from(a.is_truthy()? ^ b.is_truthy()?),
             _ => Literal::from(false),
-        }
+        };
+        Ok(result)
     }
 
     pub(crate) fn evaluate_unary(&self, variable: Literal) -> Result<Literal, CompilerError> {
@@ -57,6 +58,7 @@ impl Logical {
                 InternalUndefined => return Err(CompilerError::OperationOnUndefined),
                 Function(_) => return Err(CompilerError::OperationOnFunction),
                 Return(_) => return Err(CompilerError::OperationOnReturn),
+                Break(_) => return Err(CompilerError::OperationOnBreak),
             },
             _ => Literal::from(false),
         };
