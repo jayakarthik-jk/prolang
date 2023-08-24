@@ -1,5 +1,8 @@
-number = +input("Enter a number: ")
-
-add = (a, b) => a + b
-
-print(add(10, 20))
+mutable a = 0
+loop while a < 10 {
+    print(a)
+    if a is 5 {
+        break
+    }
+    a += 1
+}
