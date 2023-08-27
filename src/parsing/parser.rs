@@ -55,6 +55,7 @@ impl Parser {
             TokenKind::Keyword(Keyword::Loop) => self.parse_loop_statement(block),
             TokenKind::Keyword(Keyword::Return) => self.parse_return_statement(block),
             TokenKind::Keyword(Keyword::Break) => self.parse_break_statement(block),
+            TokenKind::Keyword(Keyword::Skip) => self.parse_skip_statement(block),
             _ => self.parse_expression(block),
         }
     }
@@ -87,6 +88,21 @@ impl Parser {
         }
         let returnable = self.parse_statement(parent)?;
         Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
+    }
+
+    fn parse_skip_statement(
+        &self,
+        parent: Arc<RwLock<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        self.lexer.advance();
+        if TokenKind::NewLine == self.lexer.get_current_token().kind {
+            self.lexer.advance();
+            return Ok(AbstractSyntaxTree::SkipStatement(Box::new(
+                AbstractSyntaxTree::Literal(Literal::from(1)),
+            )));
+        }
+        let skip_count = self.parse_expression(parent)?;
+        Ok(AbstractSyntaxTree::SkipStatement(Box::new(skip_count)))
     }
 
     fn parse_block(&self, parent: Arc<RwLock<Block>>) -> Result<Arc<RwLock<Block>>, CompilerError> {
@@ -150,8 +166,11 @@ impl Parser {
             self.lexer.advance();
             condition = self.parse_expression(Arc::clone(&block))?;
         }
-
-        let block_to_execute = self.parse_statement(block)?;
+        
+        let previous_state = block.read().unwrap().is_loop;
+        block.write().unwrap().is_loop = true;
+        let block_to_execute = self.parse_statement(Arc::clone(&block))?;
+        block.write().unwrap().is_loop = previous_state;
 
         Ok(AbstractSyntaxTree::LoopStatement(
             Box::new(condition),

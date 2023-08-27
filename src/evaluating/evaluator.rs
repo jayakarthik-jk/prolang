@@ -73,14 +73,33 @@ fn evaluate(
         AbstractSyntaxTree::CallStatement(name, arguements) => {
             evalute_call_statement(name.to_string(), arguements, block)
         }
-        AbstractSyntaxTree::ReturnStatement(statement) => Ok(Literal::new(
-            DataType::Return(Box::new(evaluate(statement, block)?)),
-            false,
-        )),
-        AbstractSyntaxTree::BreakStatement(statement) => Ok(Literal::new(
-            DataType::Break(Box::new(evaluate(statement, block)?)),
-            false,
-        )),
+        AbstractSyntaxTree::ReturnStatement(statement) => {
+            if !block.read().unwrap().is_function {
+                return Err(CompilerError::ReturnOutsideFunction);
+            }
+            Ok(Literal::new(
+                DataType::Return(Box::new(evaluate(statement, block)?)),
+                false,
+            ))
+        },
+        AbstractSyntaxTree::BreakStatement(statement) => {
+            if !block.read().unwrap().is_loop {
+                return Err(CompilerError::BreakOutsideLoop);
+            }
+            Ok(Literal::new(
+                DataType::Break(Box::new(evaluate(statement, block)?)),
+                false,
+            ))
+        },
+        AbstractSyntaxTree::SkipStatement(statement) =>  {
+            if !block.read().unwrap().is_loop {
+                return Err(CompilerError::SkipOutsideLoop);
+            }
+            Ok(Literal::new(
+                DataType::Skip(Box::new(evaluate(statement, block)?)),
+                false,
+            ))
+        },
     }
 }
 
@@ -136,15 +155,25 @@ fn evaluate_loop_statement(
     block_or_statement_to_execute: &AbstractSyntaxTree,
     block: Arc<RwLock<Block>>,
 ) -> Result<Literal, CompilerError> {
-    let mut condition = evaluate(condition_statement, Arc::clone(&block))?;
     let mut result = Literal::from(false);
-    while condition.is_truthy()? {
+    let mut skip_count = 0;
+    while evaluate(condition_statement, Arc::clone(&block))?.is_truthy()? {
+        if skip_count > 0 {
+            skip_count -= 1;
+            continue;
+        }
         result = evaluate(block_or_statement_to_execute, Arc::clone(&block))?;
-        if let DataType::Break(statement) = result.value {
-            result = *statement;
+        if let DataType::Break(value_to_return) = result.value {
+            result = *value_to_return;
             break;
         }
-        condition = evaluate(condition_statement, Arc::clone(&block))?;
+        if let DataType::Skip(count) = result.value.clone() {
+            if let DataType::Integer(count) = count.value {
+                skip_count = count;
+            } else {
+                return Err(CompilerError::SkipCountTypeMisMatch(count.value.to_string()));
+            }
+        }
     }
     Ok(result)
 }
@@ -170,19 +199,14 @@ fn evaluate_block(block: Arc<RwLock<Block>>) -> Result<Literal, CompilerError> {
     for statement in block.read().unwrap().statements.iter() {
         result = evaluate(statement, Arc::clone(&block))?;
         if let DataType::Return(statement) = result.value {
-            if block.read().unwrap().is_function {
-                result = *statement;
-                break;
-            } else {
-                return Err(CompilerError::ReturnOutsideFunction);
-            }
+            result = *statement;
+            break;
         }
         if let DataType::Break(_) = result.value {
-            if block.read().unwrap().is_loop {
-                break;
-            } else {
-                return Err(CompilerError::BreakOutsideLoop);
-            }
+            break;
+        }
+        if let DataType::Skip(_) = result.value {
+            break;
         }
     }
     block.read().unwrap().clear_symbols();

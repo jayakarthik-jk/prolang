@@ -7,6 +7,7 @@ use crate::common::operators::Operator;
 use crate::lexing::symbols::Symbol;
 use crate::lexing::token::TokenKind;
 
+
 #[derive(Debug, Clone)]
 pub enum CompilerError {
     NoTokensAvailable,
@@ -50,6 +51,9 @@ pub enum CompilerError {
     ReturnOutsideFunction,
     BreakOutsideLoop,
     OperationOnBreak,
+    OperationOnSkip,
+    SkipOutsideLoop,
+    SkipCountTypeMisMatch(String),
 
     // warnings
     Warnings(&'static str),
@@ -146,12 +150,21 @@ impl Display for CompilerError {
                 "Cannot perform operation on `return` Keyword".to_string()
             }
             CompilerError::ReturnOutsideFunction => {
-                "return statement outside a function".to_string()
+                "return statement can only occur inside a function".to_string()
             }
-            CompilerError::BreakOutsideLoop => "break outside a loop".to_string(),
+            CompilerError::BreakOutsideLoop => "break statement can only occur inside a loop".to_string(),
             CompilerError::OperationOnBreak => {
                 "cannot perform operation on `break` keyword".to_string()
             }
+            CompilerError::OperationOnSkip => {
+                "cannot perform operation on `skip` keyword".to_string()
+            },
+            CompilerError::SkipOutsideLoop => {
+                "skip statement can only occur inside a loop".to_string()
+            }
+            CompilerError::SkipCountTypeMisMatch(datatype) => format!(
+                "skip count must be an integer, but got {datatype}"
+            ),
         };
         write!(f, "{}", text.red())
     }

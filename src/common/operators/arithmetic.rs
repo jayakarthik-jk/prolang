@@ -71,6 +71,7 @@ impl Arithmetic {
                 Function(_) => return Err(CompilerError::OperationOnFunction),
                 Return(_) => return Err(CompilerError::OperationOnReturn),
                 Break(_) => return Err(CompilerError::OperationOnBreak),
+                Skip(_) => return Err(CompilerError::OperationOnSkip),
             },
             operator => {
                 return Err(CompilerError::InvalidOperatorForUnaryOperation(
@@ -110,6 +111,7 @@ impl Arithmetic {
             (Infinity, String(a)) => Literal::from(Arc::new(format!("infinity{a}"))),
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, Infinity) | (Infinity, _) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -143,8 +145,9 @@ impl Arithmetic {
                 (false, true) => -1,
                 _ => 0,
             }),
-            (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
+            (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -220,6 +223,7 @@ impl Arithmetic {
             }
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, _) | (_, Infinity) => Literal::from(Infinity),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -348,6 +352,7 @@ impl Arithmetic {
             }
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (Infinity, Infinity) => return Err(CompilerError::MathUndefined),
             (_, InternalUndefined) | (InternalUndefined, _) => {
@@ -471,8 +476,9 @@ impl Arithmetic {
                     Literal::from(a),
                 ))
             }
-            (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
+            (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)
@@ -579,6 +585,7 @@ impl Arithmetic {
             }
             (_, Return(_)) | (Return(_), _) => return Err(CompilerError::OperationOnReturn),
             (_, Break(_)) | (Break(_), _) => return Err(CompilerError::OperationOnBreak),
+            (_, Skip(_)) | (Skip(_), _) => return Err(CompilerError::OperationOnSkip),
             (_, Function(_)) | (Function(_), _) => return Err(CompilerError::OperationOnFunction),
             (_, InternalUndefined) | (InternalUndefined, _) => {
                 return Err(CompilerError::OperationOnUndefined)

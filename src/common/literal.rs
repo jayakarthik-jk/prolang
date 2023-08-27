@@ -24,6 +24,7 @@ impl Literal {
             DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
             DataType::Return(_) => return Err(CompilerError::OperationOnReturn),
             DataType::Break(_) => return Err(CompilerError::OperationOnBreak),
+            DataType::Skip(_) => return Err(CompilerError::OperationOnSkip),
         };
         Ok(result)
     }
@@ -110,6 +111,7 @@ impl Display for Literal {
             DataType::Function(_) => "Function".to_string(),
             DataType::Return(_) => "Return".to_string(),
             DataType::Break(_) => "Break".to_string(),
+            DataType::Skip(_) => "skip".to_string(),
         };
         write!(f, "{text}")
     }

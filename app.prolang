@@ -1,8 +1,10 @@
 mutable a = 0
-loop while a < 10 {
+loop while a += 1 < 10 {
     print(a)
-    if a is 5 {
+    if a is 2 {
+        skip 2
+    }
+    if a is 8 {
         break
     }
-    a += 1
 }

@@ -59,6 +59,7 @@ impl Logical {
                 Function(_) => return Err(CompilerError::OperationOnFunction),
                 Return(_) => return Err(CompilerError::OperationOnReturn),
                 Break(_) => return Err(CompilerError::OperationOnBreak),
+                Skip(_) => return Err(CompilerError::OperationOnSkip),
             },
             _ => Literal::from(false),
         };

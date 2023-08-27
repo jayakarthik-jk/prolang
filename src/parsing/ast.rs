@@ -30,6 +30,7 @@ pub(crate) enum AbstractSyntaxTree {
     CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
     ReturnStatement(Box<AbstractSyntaxTree>),
     BreakStatement(Box<AbstractSyntaxTree>),
+    SkipStatement(Box<AbstractSyntaxTree>),
 }
 
 impl AbstractSyntaxTree {
@@ -67,6 +68,7 @@ impl Display for AbstractSyntaxTree {
             AbstractSyntaxTree::CallStatement(name, _) => format!("Function call: {name}"),
             AbstractSyntaxTree::ReturnStatement(_) => "return".to_string(),
             AbstractSyntaxTree::BreakStatement(_) => "break".to_string(),
+            AbstractSyntaxTree::SkipStatement(_) => "skip".to_string(),
         };
         write!(f, "{output}")
     }

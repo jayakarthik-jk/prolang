@@ -22,6 +22,7 @@ pub enum Keyword {
     While,
     Return,
     Break,
+    Skip,
 }
 use self::Keyword::*;
 
@@ -42,6 +43,7 @@ impl Keyword {
             "while" => Keyword(While),
             "return" => Keyword(Return),
             "break" => Keyword(Break),
+            "skip" => Keyword(Skip),
             identifier => Identifier(identifier.to_string()),
         }
     }
@@ -64,6 +66,7 @@ impl Display for Keyword {
             While => "while",
             Return => "return",
             Break => "break",
+            Skip => "skip",
         };
         write!(f, "{}", text)
     }
