@@ -68,6 +68,21 @@ impl Lexer {
     pub(crate) fn parse_token(&mut self) -> Result<Token, CompilerError> {
         let current_token = match self.current {
             '\0' => Token::new(TokenKind::EndOfFile, self.line, self.column),
+            '\r' => {
+                self._next();
+                if self.current == '\n' {
+                    let token = Token::new(TokenKind::NewLine, self.line, self.column);
+                    self._next();
+                    self.line += 1;
+                    self.column = 1;
+                    token
+                } else {
+                    let token = Token::new(TokenKind::NewLine, self.line, self.column);
+                    self.line += 1;
+                    self.column = 1;
+                    token
+                }
+            }
             '\n' => {
                 let token = Token::new(TokenKind::NewLine, self.line, self.column);
                 self._next();

@@ -31,7 +31,7 @@ fn input(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
     let stdin = stdin();
     let mut buffer = String::new();
     stdin.read_line(&mut buffer).unwrap();
-    buffer = buffer.replace('\n', "");
+    buffer = buffer.trim().to_string();
     Ok(Literal::from(buffer))
 }
 
