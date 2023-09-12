@@ -46,9 +46,7 @@ fn console_mode() {
         if let Err(error) = interpretate(input) {
             println!("{}", error);
         }
-        Diagnostics::read_errors().iter().for_each(|error| {
-            println!("{}", error);
-        });
+        Diagnostics::print_errors();
     }
 }
 
@@ -67,7 +65,5 @@ fn file_mode() {
     if let Err(error) = interpretate(input) {
         println!("{}", error);
     }
-    Diagnostics::read_errors().iter().for_each(|error| {
-        println!("{}", error);
-    });
+    Diagnostics::print_errors();
 }

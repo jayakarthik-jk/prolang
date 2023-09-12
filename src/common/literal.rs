@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use super::{datatypes::DataType, errors::CompilerError};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Literal {
     pub(crate) value: DataType,
     mutability: bool,
@@ -14,11 +14,11 @@ impl Literal {
     }
 
     pub(crate) fn is_truthy(&self) -> Result<bool, CompilerError> {
-        let result = match self.clone().value {
+        let result = match &self.value {
             DataType::String(a) => !a.is_empty(),
-            DataType::Float(a) => a != 0.0,
-            DataType::Integer(a) => a != 0,
-            DataType::Boolean(a) => a,
+            DataType::Float(a) => *a != 0.0,
+            DataType::Integer(a) => *a != 0,
+            DataType::Boolean(a) => *a,
             DataType::Infinity => true,
             DataType::Function(_) => true,
             DataType::InternalUndefined => return Err(CompilerError::OperationOnUndefined),
@@ -101,7 +101,7 @@ impl From<DataType> for Literal {
 
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let text = match self.clone().value {
+        let text = match &self.value {
             DataType::String(a) => a.to_string(),
             DataType::Float(a) => a.to_string(),
             DataType::Integer(a) => a.to_string(),

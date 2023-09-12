@@ -19,6 +19,7 @@ pub enum Symbol {
     LessThan,
     Comma,
     Colon,
+    Semicolon,
 }
 
 impl Display for Symbol {
@@ -41,6 +42,7 @@ impl Display for Symbol {
             Symbol::CloseCurlyBracket => "}",
             Symbol::Comma => ",",
             Symbol::Colon => ":",
+            Symbol::Semicolon => ";",
             // TODO: add bitwise operators &, |, ^
         };
         write!(f, "{}", text)

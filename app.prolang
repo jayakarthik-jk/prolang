@@ -1,8 +1,10 @@
-number = +input("Enter a number: ")
+number = number(input("Enter a number: "))
+
+log = (str) => print(str)
 
 if number % 5 is 0 {
-    print("Fizz")
+    log("Fizz")
 } 
 if number % 7 is 0 {
-    print("Buzz")
+    log("Buzz")
 } 

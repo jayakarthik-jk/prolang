@@ -15,7 +15,9 @@ impl Diagnostics {
     }
 
     // Function to read all errors in the vector
-    pub fn read_errors() -> Vec<CompilerError> {
-        DIAGNOSTICS_VECTOR.lock().unwrap().clone()
+    pub fn print_errors() {
+        for error in DIAGNOSTICS_VECTOR.lock().unwrap().iter() {
+            println!("{}", error);
+        }
     }
 }

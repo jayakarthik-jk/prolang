@@ -45,7 +45,6 @@ impl Parser {
         &self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.skip_new_lines();
         let token = self.lexer.get_current_token();
         match &token.kind {
             TokenKind::Symbol(OpenParanthesis) => self.parse_function_statement(block),
@@ -65,11 +64,13 @@ impl Parser {
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.lexer.advance();
-        if TokenKind::NewLine == self.lexer.get_current_token().kind {
-            self.lexer.advance();
-            return Ok(AbstractSyntaxTree::BreakStatement(Box::new(
-                AbstractSyntaxTree::Literal(Literal::from(false)),
-            )));
+        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+            if symbol == Semicolon {
+                self.lexer.advance();
+                return Ok(AbstractSyntaxTree::BreakStatement(Box::new(
+                    AbstractSyntaxTree::Literal(Literal::from(false)),
+                )));
+            }
         }
         let returnable = self.parse_statement(parent)?;
         Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
@@ -80,11 +81,13 @@ impl Parser {
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.lexer.advance();
-        if TokenKind::NewLine == self.lexer.get_current_token().kind {
-            self.lexer.advance();
-            return Ok(AbstractSyntaxTree::ReturnStatement(Box::new(
-                AbstractSyntaxTree::Literal(Literal::from(false)),
-            )));
+        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+            if symbol == Semicolon {
+                self.lexer.advance();
+                return Ok(AbstractSyntaxTree::ReturnStatement(Box::new(
+                    AbstractSyntaxTree::Literal(Literal::from(false)),
+                )));
+            }
         }
         let returnable = self.parse_statement(parent)?;
         Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
@@ -95,11 +98,13 @@ impl Parser {
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.lexer.advance();
-        if TokenKind::NewLine == self.lexer.get_current_token().kind {
-            self.lexer.advance();
-            return Ok(AbstractSyntaxTree::SkipStatement(Box::new(
-                AbstractSyntaxTree::Literal(Literal::from(1)),
-            )));
+        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+            if symbol == Semicolon {
+                self.lexer.advance();
+                return Ok(AbstractSyntaxTree::SkipStatement(Box::new(
+                    AbstractSyntaxTree::Literal(Literal::from(1)),
+                )));
+            }
         }
         let skip_count = self.parse_expression(parent)?;
         Ok(AbstractSyntaxTree::SkipStatement(Box::new(skip_count)))
@@ -149,7 +154,6 @@ impl Parser {
         &self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.skip_new_lines();
         Ok(AbstractSyntaxTree::ElseStatement(Box::new(
             self.parse_statement(Arc::clone(&block))?,
         )))
@@ -166,7 +170,7 @@ impl Parser {
             self.lexer.advance();
             condition = self.parse_expression(Arc::clone(&block))?;
         }
-        
+
         let previous_state = block.read().unwrap().is_loop;
         block.write().unwrap().is_loop = true;
         let block_to_execute = self.parse_statement(Arc::clone(&block))?;
@@ -187,7 +191,6 @@ impl Parser {
         while TokenKind::Symbol(CloseParanthesis) != self.lexer.peek(count).kind
             && TokenKind::EndOfFile != self.lexer.peek(count).kind
         {
-            count = self.count_new_lines(count);
             let current = self.lexer.peek(count);
             if let TokenKind::Identifier(name) = &current.kind {
                 let parameter = AbstractSyntaxTree::Identifier(name.to_string());
@@ -196,7 +199,6 @@ impl Parser {
                 return self.parse_expression(block);
             }
             count += 1;
-            count = self.count_new_lines(count);
 
             if TokenKind::Symbol(CloseParanthesis) != self.lexer.peek(count).kind
                 && TokenKind::Symbol(Comma) != self.lexer.peek(count).kind
@@ -205,12 +207,10 @@ impl Parser {
             } else if TokenKind::Symbol(Comma) == self.lexer.peek(count).kind {
                 count += 1;
             }
-            count = self.count_new_lines(count);
         }
         for _ in 0..=count {
             self.lexer.advance();
         }
-        self.skip_new_lines();
         let current = self.lexer.get_current_token();
         if TokenKind::Symbol(Equals) != current.kind
             && TokenKind::Symbol(GreaterThan) != self.lexer.peek(1).kind
@@ -252,10 +252,8 @@ impl Parser {
         while TokenKind::Symbol(CloseParanthesis) != self.lexer.get_current_token().kind
             && TokenKind::EndOfFile != self.lexer.get_current_token().kind
         {
-            self.skip_new_lines();
             let expression = self.parse_expression(Arc::clone(&block))?;
             arguments.push(Box::new(expression));
-            self.skip_new_lines();
             let current = self.lexer.get_current_token();
             if TokenKind::Symbol(CloseParanthesis) != current.kind
                 && TokenKind::Symbol(Comma) != current.kind
@@ -270,7 +268,6 @@ impl Parser {
             if TokenKind::Symbol(Comma) == current.kind {
                 self.lexer.advance();
             }
-            self.skip_new_lines();
         }
 
         self.match_token(TokenKind::Symbol(CloseParanthesis))?;
@@ -300,7 +297,6 @@ impl Parser {
                             self.lexer.advance();
                         }
                         let expression = self.parse_statement(block)?;
-                        self.skip_new_lines();
 
                         Ok(AbstractSyntaxTree::AssignmentExpression(
                             name.to_string(),
@@ -349,26 +345,10 @@ impl Parser {
             let right = self.parse_arithmetic_expression(precedence, Arc::clone(&block))?;
             left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
         }
-        self.skip_new_lines();
         Ok(left)
     }
 
-    fn skip_new_lines(&self) {
-        while TokenKind::NewLine == self.lexer.get_current_token().kind {
-            self.lexer.advance();
-        }
-    }
-
-    fn count_new_lines(&self, offset: usize) -> usize {
-        let mut count = offset;
-        while TokenKind::NewLine == self.lexer.peek(count).kind {
-            count += 1;
-        }
-        count
-    }
-
     fn match_token(&self, kind: TokenKind) -> Result<Rc<Token>, CompilerError> {
-        self.skip_new_lines();
         let token = self.lexer.get_current_token();
         self.lexer.advance();
         if kind == token.kind {
@@ -384,7 +364,6 @@ impl Parser {
     }
 
     fn parse_factor(&self, block: Arc<RwLock<Block>>) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.skip_new_lines();
         let token = self.lexer.get_current_token_and_advance();
         match &token.kind {
             TokenKind::Literal(variable) => Ok(AbstractSyntaxTree::Literal(variable.clone())),

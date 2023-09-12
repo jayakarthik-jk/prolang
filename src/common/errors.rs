@@ -7,25 +7,45 @@ use crate::common::operators::Operator;
 use crate::lexing::symbols::Symbol;
 use crate::lexing::token::TokenKind;
 
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum CompilerError {
     NoTokensAvailable,
 
     // Lexical Errors
-    InvalidCharacter(char, usize, usize),
-    InvalidNumber(String, usize, usize),
+    InvalidCharacter(
+        char,  // character
+        usize, // line
+        usize, // column
+    ),
+    InvalidNumber(
+        String, // number
+        usize,  // line
+        usize,  // column
+    ),
     UnterminatedString(usize, usize),
     InvalidKeyword,
     InvalidUtf8Character,
 
     // Syntax Errors
-    UnexpectedToken(TokenKind, usize, usize),
-    UnexpectedTokenWithExpected(TokenKind, TokenKind, usize, usize),
+    UnexpectedToken(
+        TokenKind, // Token
+        usize,     // line
+        usize,     // column
+    ),
+    UnexpectedTokenWithExpected(
+        TokenKind, // Unexpected Token
+        TokenKind, // Expected Token
+        usize,     // line
+        usize,     // column
+    ),
     InvalidOperationAsAssignmentOperation,
     CannotConvertFromImmutableToMutable,
     UnInitializedVariable(String),
-    MissingArrow(TokenKind, usize, usize),
+    MissingArrow(
+        TokenKind, // Token
+        usize,     // line
+        usize,     // column
+    ),
 
     // Evaluation Errors
     InvalidOperatorForBinaryOperation(Operator),
@@ -40,13 +60,21 @@ pub enum CompilerError {
     InvalidAssignment,
     InvalidStringParsing(Literal),
     InvalidUneryOperation,
-    UnsupportedOperationBetween(Literal, Operator, Literal),
+    UnsupportedOperationBetween(
+        Literal,  // Left
+        Operator, // Operator
+        Literal,  // Right
+    ),
     MathUndefined,
     InvalidUseOfMutableKeyword,
     ImmutableVariable(String),
     OperationOnFunction,
     NotAFunction(String),
-    ArgumentLengthMismatch(String, usize, usize),
+    ArgumentLengthMismatch(
+        String, // function name
+        usize,  // expected
+        usize,  // got
+    ),
     OperationOnReturn,
     ReturnOutsideFunction,
     BreakOutsideLoop,
@@ -54,6 +82,7 @@ pub enum CompilerError {
     OperationOnSkip,
     SkipOutsideLoop,
     SkipCountTypeMisMatch(String),
+    InvalidType(String),
 
     // warnings
     Warnings(&'static str),
@@ -152,19 +181,24 @@ impl Display for CompilerError {
             CompilerError::ReturnOutsideFunction => {
                 "return statement can only occur inside a function".to_string()
             }
-            CompilerError::BreakOutsideLoop => "break statement can only occur inside a loop".to_string(),
+            CompilerError::BreakOutsideLoop => {
+                "break statement can only occur inside a loop".to_string()
+            }
             CompilerError::OperationOnBreak => {
                 "cannot perform operation on `break` keyword".to_string()
             }
             CompilerError::OperationOnSkip => {
                 "cannot perform operation on `skip` keyword".to_string()
-            },
+            }
             CompilerError::SkipOutsideLoop => {
                 "skip statement can only occur inside a loop".to_string()
             }
-            CompilerError::SkipCountTypeMisMatch(datatype) => format!(
-                "skip count must be an integer, but got {datatype}"
-            ),
+            CompilerError::SkipCountTypeMisMatch(datatype) => {
+                format!("skip count must be an integer, but got {datatype}")
+            }
+            CompilerError::InvalidType(received_type) => {
+                format!("Invalid type {received_type}")
+            }
         };
         write!(f, "{}", text.red())
     }

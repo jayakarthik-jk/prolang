@@ -13,9 +13,17 @@ pub(crate) enum AbstractSyntaxTree {
     // Object(SeperatedStatements<KeyValuePair>),
     // Expressions
     UnaryExpression(Operator, Box<AbstractSyntaxTree>),
-    BinaryExpression(Box<AbstractSyntaxTree>, Operator, Box<AbstractSyntaxTree>),
+    BinaryExpression(
+        Box<AbstractSyntaxTree>, // left
+        Operator,                // operator
+        Box<AbstractSyntaxTree>, // right
+    ),
     ParenthesizedExpression(Box<AbstractSyntaxTree>),
-    AssignmentExpression(String, Operator, Box<AbstractSyntaxTree>),
+    AssignmentExpression(
+        String,                  // identifier
+        Operator,                // assignment operator
+        Box<AbstractSyntaxTree>, // expression
+    ),
 
     // statements
     BlockStatement(Arc<RwLock<Block>>),
@@ -26,8 +34,14 @@ pub(crate) enum AbstractSyntaxTree {
     ),
     ElseStatement(Box<AbstractSyntaxTree>), // block or if statement
 
-    LoopStatement(Box<AbstractSyntaxTree>, Box<AbstractSyntaxTree>),
-    CallStatement(String, SeperatedStatements<Box<AbstractSyntaxTree>>),
+    LoopStatement(
+        Box<AbstractSyntaxTree>, // condition
+        Box<AbstractSyntaxTree>, // block or statement
+    ),
+    CallStatement(
+        String,                                       // name
+        SeperatedStatements<Box<AbstractSyntaxTree>>, // arguments
+    ),
     ReturnStatement(Box<AbstractSyntaxTree>),
     BreakStatement(Box<AbstractSyntaxTree>),
     SkipStatement(Box<AbstractSyntaxTree>),

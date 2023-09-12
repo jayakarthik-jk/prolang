@@ -47,7 +47,7 @@ loop {
 }
 ```
 
-# conditional loop
+## conditional loop
 
 ```
 mutable a = 10
@@ -96,3 +96,11 @@ add = (a, b) => {
 ```
 
 `note: ` by default functions return the last expression
+
+## global functions
+
+<!-- list with description -->
+
+- `print` (takes any number of arguments and prints them to stdout)
+- `input` (takes optional string as argument and prints it to stdout and returns the input from stdin)
+- `number` (converts string to number)
