@@ -384,10 +384,6 @@ impl Lexer {
         self.tokens.len()
     }
 
-    // pub(crate)fn generate_factory_token(&self, line: usize, column: usize) -> Rc<Token> {
-    //     Rc::new(Token::new(TokenKind::FactoryToken, line, column))
-    // }
-
     fn parse_keyword(&self, word: String) -> Token {
         let keyword = Keyword::get_keyword_kind(&word);
         Token::new(keyword, self.line, self.column - word.len())

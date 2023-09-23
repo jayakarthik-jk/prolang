@@ -19,7 +19,5 @@ pub fn interpretate(source_code: String) -> Result<(), CompilerError> {
         evaluator.evaluate()?;
     }
 
-    println!();
-
     Ok(())
 }

@@ -171,6 +171,12 @@ impl Parser {
             condition = self.parse_expression(Arc::clone(&block))?;
         }
 
+        if TokenKind::Keyword(Keyword::Until) == self.lexer.get_current_token().kind {
+            self.lexer.advance();
+            condition = self.parse_expression(Arc::clone(&block))?;
+            condition = AbstractSyntaxTree::UnaryExpression(Operator::Logical(Logical::Not), Box::new(condition));
+        }
+
         let previous_state = block.read().unwrap().is_loop;
         block.write().unwrap().is_loop = true;
         let block_to_execute = self.parse_statement(Arc::clone(&block))?;
@@ -289,7 +295,7 @@ impl Parser {
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let identifier_token = self.lexer.get_current_token();
         match &identifier_token.kind {
-            TokenKind::Keyword(Keyword::Mutable) => self.handle_mutable_keyword(block),
+            TokenKind::Keyword(Keyword::Let) => self.handle_mutable_keyword(block),
             TokenKind::Identifier(name) => {
                 if let Some((operator, length)) = self.match_operator(1) {
                     if let Assignment(_) = operator {

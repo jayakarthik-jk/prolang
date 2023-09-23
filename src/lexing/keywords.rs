@@ -15,11 +15,12 @@ pub enum Keyword {
     Not,
     Xor,
     Is,
-    Mutable,
+    Let,
     If,
     Else,
     Loop,
     While,
+    Until,
     Return,
     Break,
     Skip,
@@ -36,7 +37,7 @@ impl Keyword {
             "or" => Keyword(Or),
             "not" => Keyword(Not),
             "xor" => Keyword(Xor),
-            "mutable" => Keyword(Mutable),
+            "let" => Keyword(Let),
             "if" => Keyword(If),
             "else" => Keyword(Else),
             "loop" => Keyword(Loop),
@@ -44,6 +45,7 @@ impl Keyword {
             "return" => Keyword(Return),
             "break" => Keyword(Break),
             "skip" => Keyword(Skip),
+            "until" => Keyword(Until),
             identifier => Identifier(identifier.to_string()),
         }
     }
@@ -59,7 +61,7 @@ impl Display for Keyword {
             Not => "not",
             Xor => "xor",
             Is => "is",
-            Mutable => "mutable",
+            Let => "let",
             If => "if",
             Else => "else",
             Loop => "loop",
@@ -67,6 +69,7 @@ impl Display for Keyword {
             Return => "return",
             Break => "break",
             Skip => "skip",
+            Until => "until",
         };
         write!(f, "{}", text)
     }

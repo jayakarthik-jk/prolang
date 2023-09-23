@@ -1,10 +1,6 @@
-number = number(input("Enter a number: "))
+let a = 10
 
-log = (str) => print(str)
-
-if number % 5 is 0 {
-    log("Fizz")
-} 
-if number % 7 is 0 {
-    log("Buzz")
-} 
+loop until a is 0 {
+    print(a)
+    a -= 1
+}

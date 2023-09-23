@@ -1,44 +1,63 @@
-programming language for problem solving
+# Prolang
+A Simple human readable functional programming language
+
+### Goals
+1. Simple
+2. Readable
+3. Ease of learning
+### Solution
+(basic) python clone with brackets
+
+---
+### list of contents
+1. 
+2. 
+3. 
+---
+
 
 ## variable declaration
-
-inspired by python
 
 ```
 name = "peter parker"
 age = 21
 ```
-
+---
 ## Immutability
 
 variables are immutable by default
-for mutable variables, use the `mutable` keyword
+for mutable variables, use the `let` keyword
 
 ```
-mutable is_gwen_alive = true
+let is_gwen_alive = true
 ```
-
+---
 ## conditional statements
 
 ```
 
-a = 35
-mutable str = ""
+a = number(input(""))
 
 if a % 5 is 0 and a % 7 is 0 {
-    str = "FizzBuzz"
+    print("FizzBuzz")
 } else if a % 5 is 0 {
-    str = "Fizz"
+    print("Fizz")
 } else if a % 7 is 0 {
-    str = "Buzz"
+    print("Buzz")
 } else {
-    str = a
+    print(a)
 }
 
 ```
+`input(args...)` write the args in the console and read an input from it
+
+`number(arg)` convert the string to number if possible
 
 `note:` `is` and `is not` are identity operators similar to == and != respectively
 
+`note:` curly brackets are optional for a block if it contains only single statement
+
+---
 ## unconditional loop
 
 ```
@@ -46,19 +65,30 @@ loop {
     print("got stuck in an infinite loop")
 }
 ```
-
+---
 ## conditional loop
+### while loop
+exits when the condition gets false
+```
+let a = 10
+
+loop while a > 0 {
+    print(a)
+    a -= 1
+}
 
 ```
-mutable a = 10
+### while loop
+exits when the condition gets true
+```
+let a = 10
 
-loop while a >= 0 {
+loop until a is 0 {
     print(a)
     a -= 1
 }
 ```
-
-`note:` loops are just blocks
+`note:` loops are just single statement
 you can substitute loop block with any other
 regular blocks
 
@@ -90,9 +120,16 @@ else loop while a < 100 {
 ## function declaration
 
 ```
-add = (a, b) => {
-    a + b
+add = (a, b) => a + b
+
+connectToDB = (url) => {
+    if url is "" {
+        return false
+    }
+    # connect to the database
+    connection
 }
+
 ```
 
 `note: ` by default functions return the last expression
@@ -104,3 +141,4 @@ add = (a, b) => {
 - `print` (takes any number of arguments and prints them to stdout)
 - `input` (takes optional string as argument and prints it to stdout and returns the input from stdin)
 - `number` (converts string to number)
+- yet to add more
