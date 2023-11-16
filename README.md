@@ -8,14 +8,6 @@ A Simple human readable functional programming language
 ### Solution
 (basic) python clone with brackets
 
----
-### list of contents
-1. 
-2. 
-3. 
----
-
-
 ## variable declaration
 
 ```
