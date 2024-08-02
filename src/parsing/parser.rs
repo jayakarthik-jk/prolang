@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, RwLock};
 
 use super::block::Block;
@@ -15,39 +15,67 @@ use crate::common::operators::relational::Relational;
 use crate::common::operators::Operator;
 use crate::common::operators::Operator::*;
 use crate::lexing::keywords::Keyword;
-use crate::lexing::lexer::Lexer;
 use crate::lexing::symbols::Symbol::*;
 use crate::lexing::token::{Token, TokenKind};
 use crate::parsing::ast::AbstractSyntaxTree;
 
 pub(crate) struct Parser {
-    lexer: Lexer,
+    token_receiver: Receiver<Token>,
+    statement_transmitter: Sender<AbstractSyntaxTree>,
+    global_block: Arc<RwLock<Block>>,
+    temp_token_buf: Vec<Token>,
 }
 
 impl Parser {
-    pub(crate) fn new(lexer: Lexer) -> Self {
-        Self { lexer }
+    pub(crate) fn new(
+        token_receiver: Receiver<Token>,
+        statement_transmitter: Sender<AbstractSyntaxTree>,
+        global_block: Arc<RwLock<Block>>,
+    ) -> Self {
+        Self {
+            token_receiver,
+            statement_transmitter,
+            global_block,
+            temp_token_buf: Vec::new(),
+        }
     }
 
-    pub(crate) fn parse(&mut self) -> Result<Arc<RwLock<Block>>, CompilerError> {
-        if self.lexer.get_token_count() == 0 {
-            self.lexer.lex()?;
+    fn get_current_token(&mut self) -> Token {
+        if let Some(token) = self.temp_token_buf.pop() {
+            token
+        } else {
+            self.token_receiver
+                .recv()
+                .unwrap_or_else(|_| Token::new(TokenKind::EndOfFile, 0, 0))
         }
-        let global_block = Arc::new(RwLock::new(Block::new()));
-        while TokenKind::EndOfFile != self.lexer.get_current_token().kind {
-            let statement = self.parse_statement(Arc::clone(&global_block))?;
-            global_block.write().unwrap().statements.push(statement);
+    }
+
+    pub(crate) fn parse(mut self) {
+        let mut current = self.get_current_token();
+        while TokenKind::EndOfFile != current.kind {
+            self.temp_token_buf.push(current);
+            let statement = match self.parse_statement(Arc::clone(&self.global_block)) {
+                Ok(statement) => statement,
+                Err(err) => {
+                    eprintln!("{err}");
+                    panic!("{err}")
+                }
+            };
+            self.statement_transmitter.send(statement).unwrap();
+            current = self.get_current_token();
         }
-        Ok(global_block)
     }
 
     fn parse_statement(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let token = self.lexer.get_current_token();
+        let token = self.get_current_token();
         match &token.kind {
-            TokenKind::Symbol(OpenParanthesis) => self.parse_function_statement(block),
+            TokenKind::Symbol(OpenParanthesis) => {
+                self.temp_token_buf.push(token);
+                self.parse_function_statement(block)
+            }
             TokenKind::Symbol(OpenCurlyBracket) => {
                 Ok(AbstractSyntaxTree::BlockStatement(self.parse_block(block)?))
             }
@@ -55,92 +83,100 @@ impl Parser {
             TokenKind::Keyword(Keyword::Return) => self.parse_return_statement(block),
             TokenKind::Keyword(Keyword::Break) => self.parse_break_statement(block),
             TokenKind::Keyword(Keyword::Skip) => self.parse_skip_statement(block),
-            _ => self.parse_expression(block),
+            _ => {
+                self.temp_token_buf.push(token);
+                self.parse_expression(block)
+            }
         }
     }
 
     fn parse_break_statement(
-        &self,
+        &mut self,
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.lexer.advance();
-        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+        let current = self.get_current_token();
+        if let TokenKind::Symbol(symbol) = current.kind {
             if symbol == Semicolon {
-                self.lexer.advance();
                 return Ok(AbstractSyntaxTree::BreakStatement(Box::new(
                     AbstractSyntaxTree::Literal(Literal::from(false)),
                 )));
             }
         }
+        self.temp_token_buf.push(current);
         let returnable = self.parse_statement(parent)?;
         Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
     }
 
     fn parse_return_statement(
-        &self,
+        &mut self,
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.lexer.advance();
-        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+        let current = self.get_current_token();
+        if let TokenKind::Symbol(symbol) = current.kind {
             if symbol == Semicolon {
-                self.lexer.advance();
                 return Ok(AbstractSyntaxTree::ReturnStatement(Box::new(
                     AbstractSyntaxTree::Literal(Literal::from(false)),
                 )));
             }
         }
+        self.temp_token_buf.push(current);
         let returnable = self.parse_statement(parent)?;
         Ok(AbstractSyntaxTree::ReturnStatement(Box::new(returnable)))
     }
 
     fn parse_skip_statement(
-        &self,
+        &mut self,
         parent: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.lexer.advance();
-        if let TokenKind::Symbol(symbol) = self.lexer.get_current_token().kind {
+        let current = self.get_current_token();
+        if let TokenKind::Symbol(symbol) = current.kind {
             if symbol == Semicolon {
-                self.lexer.advance();
                 return Ok(AbstractSyntaxTree::SkipStatement(Box::new(
                     AbstractSyntaxTree::Literal(Literal::from(1)),
                 )));
             }
         }
+        self.temp_token_buf.push(current);
         let skip_count = self.parse_expression(parent)?;
         Ok(AbstractSyntaxTree::SkipStatement(Box::new(skip_count)))
     }
 
-    fn parse_block(&self, parent: Arc<RwLock<Block>>) -> Result<Arc<RwLock<Block>>, CompilerError> {
+    fn parse_block(
+        &mut self,
+        parent: Arc<RwLock<Block>>,
+    ) -> Result<Arc<RwLock<Block>>, CompilerError> {
         let block = Arc::new(RwLock::new(Block::from(parent)));
-        self.lexer.advance();
-        while TokenKind::Symbol(CloseCurlyBracket) != self.lexer.get_current_token().kind
-            && TokenKind::EndOfFile != self.lexer.get_current_token().kind
+        let mut current = self.get_current_token();
+        while TokenKind::Symbol(CloseCurlyBracket) != current.kind
+            && TokenKind::EndOfFile != current.kind
         {
+            self.temp_token_buf.push(current);
             let statement = self.parse_statement(Arc::clone(&block))?;
             block.write().unwrap().statements.push(statement);
+            current = self.get_current_token();
         }
-        if TokenKind::Symbol(CloseCurlyBracket) != self.lexer.get_current_token_and_advance().kind {
+        if TokenKind::Symbol(CloseCurlyBracket) != current.kind {
             return Err(CompilerError::UnexpectedTokenWithExpected(
-                self.lexer.get_current_token().kind.clone(),
+                current.kind,
                 TokenKind::Symbol(CloseCurlyBracket),
-                self.lexer.get_current_token().line,
-                self.lexer.get_current_token().column,
+                current.line,
+                current.column,
             ));
         }
         Ok(block)
     }
 
     fn parse_if_statement(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         let condition = self.parse_expression(Arc::clone(&block))?;
         let if_block = self.parse_statement(Arc::clone(&block))?;
-        let else_block = if TokenKind::Keyword(Keyword::Else) == self.lexer.get_current_token().kind
-        {
-            self.lexer.advance();
+        let current = self.get_current_token();
+        let else_block = if TokenKind::Keyword(Keyword::Else) == current.kind {
             Some(Box::new(self.parse_else_block(Arc::clone(&block))?))
         } else {
+            self.temp_token_buf.push(current);
             None
         };
         Ok(AbstractSyntaxTree::IfStatement(
@@ -151,7 +187,7 @@ impl Parser {
     }
 
     fn parse_else_block(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         Ok(AbstractSyntaxTree::ElseStatement(Box::new(
@@ -160,21 +196,22 @@ impl Parser {
     }
 
     fn parse_loop_statement(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.lexer.advance();
         let mut condition = AbstractSyntaxTree::Literal(Literal::from(true));
+        let current = self.get_current_token();
 
-        if TokenKind::Keyword(Keyword::While) == self.lexer.get_current_token().kind {
-            self.lexer.advance();
+        if TokenKind::Keyword(Keyword::While) == current.kind {
             condition = self.parse_expression(Arc::clone(&block))?;
-        }
-
-        if TokenKind::Keyword(Keyword::Until) == self.lexer.get_current_token().kind {
-            self.lexer.advance();
+        } else if TokenKind::Keyword(Keyword::Until) == current.kind {
             condition = self.parse_expression(Arc::clone(&block))?;
-            condition = AbstractSyntaxTree::UnaryExpression(Operator::Logical(Logical::Not), Box::new(condition));
+            condition = AbstractSyntaxTree::UnaryExpression(
+                Operator::Logical(Logical::Not),
+                Box::new(condition),
+            );
+        } else {
+            self.temp_token_buf.push(current);
         }
 
         let previous_state = block.read().unwrap().is_loop;
@@ -189,46 +226,48 @@ impl Parser {
     }
 
     fn parse_function_statement(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let open_paranthesis = self.get_current_token();
         let mut parameters: Vec<AbstractSyntaxTree> = Vec::new();
-        let mut count = 1;
-        while TokenKind::Symbol(CloseParanthesis) != self.lexer.peek(count).kind
-            && TokenKind::EndOfFile != self.lexer.peek(count).kind
+        let mut current = self.get_current_token();
+        while TokenKind::Symbol(CloseParanthesis) != current.kind
+            && TokenKind::EndOfFile != current.kind
         {
-            let current = self.lexer.peek(count);
             if let TokenKind::Identifier(name) = &current.kind {
-                let parameter = AbstractSyntaxTree::Identifier(name.to_string());
+                let parameter = AbstractSyntaxTree::Identifier(name.to_owned());
                 parameters.push(parameter);
             } else {
+                self.temp_token_buf.push(current);
+                self.temp_token_buf.push(open_paranthesis);
                 return self.parse_expression(block);
             }
-            count += 1;
-
-            if TokenKind::Symbol(CloseParanthesis) != self.lexer.peek(count).kind
-                && TokenKind::Symbol(Comma) != self.lexer.peek(count).kind
+            let prev = current;
+            current = self.get_current_token();
+            if TokenKind::Symbol(CloseParanthesis) != current.kind
+                && TokenKind::Symbol(Comma) != current.kind
             {
+                self.temp_token_buf.push(current);
+                self.temp_token_buf.push(prev);
+                self.temp_token_buf.push(open_paranthesis);
                 return self.parse_expression(block);
-            } else if TokenKind::Symbol(Comma) == self.lexer.peek(count).kind {
-                count += 1;
+            } else if TokenKind::Symbol(Comma) == current.kind {
+                current = self.get_current_token();
             }
         }
-        for _ in 0..=count {
-            self.lexer.advance();
-        }
-        let current = self.lexer.get_current_token();
-        if TokenKind::Symbol(Equals) != current.kind
-            && TokenKind::Symbol(GreaterThan) != self.lexer.peek(1).kind
-        {
+
+        let equal = self.get_current_token();
+        let arrow = self.get_current_token();
+
+        if TokenKind::Symbol(Equals) != equal.kind && TokenKind::Symbol(GreaterThan) != arrow.kind {
             return Err(CompilerError::MissingArrow(
-                current.kind.clone(),
+                current.kind,
                 current.line,
                 current.column,
             ));
         }
-        self.lexer.advance();
-        self.lexer.advance();
+
         let previous_state = block.read().unwrap().is_function;
         block.write().unwrap().is_function = true;
         let function_block_ast = self.parse_statement(Arc::clone(&block))?;
@@ -249,33 +288,31 @@ impl Parser {
     }
 
     fn parse_function_call_statement(
-        &self,
+        &mut self,
         name: String,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        self.lexer.advance();
         let mut arguments: Vec<Box<AbstractSyntaxTree>> = Vec::new();
-        while TokenKind::Symbol(CloseParanthesis) != self.lexer.get_current_token().kind
-            && TokenKind::EndOfFile != self.lexer.get_current_token().kind
+        let mut current = self.get_current_token();
+        while TokenKind::Symbol(CloseParanthesis) != current.kind
+            && TokenKind::EndOfFile != current.kind
         {
+            self.temp_token_buf.push(current);
             let expression = self.parse_expression(Arc::clone(&block))?;
             arguments.push(Box::new(expression));
-            let current = self.lexer.get_current_token();
+            current = self.get_current_token();
             if TokenKind::Symbol(CloseParanthesis) != current.kind
                 && TokenKind::Symbol(Comma) != current.kind
             {
                 return Err(CompilerError::UnexpectedTokenWithExpected(
-                    current.kind.clone(),
+                    current.kind,
                     TokenKind::Symbol(Comma),
                     current.line,
                     current.column,
                 ));
             }
-            if TokenKind::Symbol(Comma) == current.kind {
-                self.lexer.advance();
-            }
         }
-
+        self.temp_token_buf.push(current);
         self.match_token(TokenKind::Symbol(CloseParanthesis))?;
 
         let arguments = SeperatedStatements::new(Comma, OpenParanthesis, arguments);
@@ -283,51 +320,43 @@ impl Parser {
     }
 
     fn parse_expression(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
         self.parse_assignment_expression(block)
     }
 
     fn parse_assignment_expression(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let identifier_token = self.lexer.get_current_token();
+        let identifier_token = self.get_current_token();
         match &identifier_token.kind {
-            TokenKind::Keyword(Keyword::Let) => self.handle_mutable_keyword(block),
+            TokenKind::Keyword(Keyword::Let) => return self.handle_mutable_keyword(block),
             TokenKind::Identifier(name) => {
-                if let Some((operator, length)) = self.match_operator(1) {
-                    if let Assignment(_) = operator {
-                        for _ in 0..length {
-                            self.lexer.advance();
-                        }
-                        let expression = self.parse_statement(block)?;
+                if let Some(operator) = self.match_assignment_operator() {
+                    let expression = self.parse_statement(block)?;
 
-                        Ok(AbstractSyntaxTree::AssignmentExpression(
-                            name.to_string(),
-                            operator,
-                            Box::new(expression),
-                        ))
-                    } else {
-                        self.parse_arithmetic_expression(0, block)
-                    }
-                } else {
-                    self.parse_arithmetic_expression(0, block)
+                    return Ok(AbstractSyntaxTree::AssignmentExpression(
+                        name.to_owned(),
+                        operator,
+                        Box::new(expression),
+                    ));
                 }
             }
-            _ => self.parse_arithmetic_expression(0, block),
+            _ => {}
         }
+        self.temp_token_buf.push(identifier_token);
+        self.parse_arithmetic_expression(0, block)
     }
 
     fn parse_arithmetic_expression(
-        &self,
+        &mut self,
         parent_precedence: u8,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        let mut left = if let Some((operator, _)) = self.match_operator(0) {
+        let mut left = if let Some(operator) = self.match_operator() {
             if operator.get_unery_precedence() >= parent_precedence {
-                self.lexer.advance();
                 let expression = self.parse_arithmetic_expression(
                     operator.get_unery_precedence(),
                     Arc::clone(&block),
@@ -340,13 +369,10 @@ impl Parser {
             self.parse_factor(Arc::clone(&block))?
         };
 
-        while let Some((operator, length)) = self.match_operator(0) {
+        while let Some(operator) = self.match_operator() {
             let precedence = operator.get_binary_precedence();
             if precedence <= parent_precedence {
                 break;
-            }
-            for _ in 0..length {
-                self.lexer.advance();
             }
             let right = self.parse_arithmetic_expression(precedence, Arc::clone(&block))?;
             left = AbstractSyntaxTree::BinaryExpression(Box::new(left), operator, Box::new(right));
@@ -354,14 +380,13 @@ impl Parser {
         Ok(left)
     }
 
-    fn match_token(&self, kind: TokenKind) -> Result<Rc<Token>, CompilerError> {
-        let token = self.lexer.get_current_token();
-        self.lexer.advance();
+    fn match_token(&mut self, kind: TokenKind) -> Result<Token, CompilerError> {
+        let token = self.get_current_token();
         if kind == token.kind {
             Ok(token)
         } else {
             Err(CompilerError::UnexpectedTokenWithExpected(
-                token.kind.clone(),
+                token.kind,
                 kind,
                 token.line,
                 token.column,
@@ -369,9 +394,12 @@ impl Parser {
         }
     }
 
-    fn parse_factor(&self, block: Arc<RwLock<Block>>) -> Result<AbstractSyntaxTree, CompilerError> {
-        let token = self.lexer.get_current_token_and_advance();
-        match &token.kind {
+    fn parse_factor(
+        &mut self,
+        block: Arc<RwLock<Block>>,
+    ) -> Result<AbstractSyntaxTree, CompilerError> {
+        let token = self.get_current_token();
+        match token.kind {
             TokenKind::Literal(variable) => Ok(AbstractSyntaxTree::Literal(variable.clone())),
             TokenKind::Symbol(symbol) => match symbol {
                 OpenParanthesis => {
@@ -382,21 +410,23 @@ impl Parser {
                     )))
                 }
                 symbol => Err(CompilerError::UnexpectedToken(
-                    TokenKind::Symbol(*symbol),
+                    TokenKind::Symbol(symbol),
                     token.line,
                     token.column,
                 )),
             },
             TokenKind::Identifier(name) => {
-                if TokenKind::Symbol(OpenParanthesis) == self.lexer.get_current_token().kind {
+                let current = self.get_current_token();
+                if TokenKind::Symbol(OpenParanthesis) == current.kind {
                     self.parse_function_call_statement(name.to_string(), block)
                 } else {
+                    self.temp_token_buf.push(current);
                     Ok(AbstractSyntaxTree::Identifier(name.clone()))
                 }
             }
             TokenKind::Keyword(Keyword::If) => self.parse_if_statement(block),
             kind => Err(CompilerError::UnexpectedToken(
-                kind.clone(),
+                kind,
                 token.line,
                 token.column,
             )),
@@ -404,15 +434,13 @@ impl Parser {
     }
 
     fn handle_mutable_keyword(
-        &self,
+        &mut self,
         block: Arc<RwLock<Block>>,
     ) -> Result<AbstractSyntaxTree, CompilerError> {
-        if let TokenKind::Identifier(variable_name) = &self.lexer.peek(1).kind {
-            if let Some((operator, length)) = self.match_operator(2) {
+        let current = self.get_current_token();
+        if let TokenKind::Identifier(variable_name) = &current.kind {
+            if let Some(operator) = self.match_operator() {
                 // `mutable` variable_name operator expression
-                for _ in 0..length {
-                    self.lexer.advance();
-                }
                 let expression = self.parse_assignment_expression(Arc::clone(&block))?;
                 handle_mutable_assignment(variable_name, operator, expression, block)
             } else {
@@ -430,200 +458,247 @@ impl Parser {
         }
     }
 
-    fn match_operator(&self, offset: usize) -> Option<(Operator, usize)> {
-        // TODO: use match instead of if let to include keyword operators
-        // like 'and', 'or', 'not', 'xor', 'is', 'in', 'not in', 'is not'
-        let (operator, length) = if let TokenKind::Symbol(operator_symbol) =
-            self.lexer.peek(offset).kind
-        {
+    fn match_assignment_operator(&mut self) -> Option<Operator> {
+        let token = self.get_current_token();
+        if let TokenKind::Symbol(operator_symbol) = &token.kind {
+            let second_token = self.get_current_token();
             match operator_symbol {
                 Equals => {
                     // =
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // ==
-                            (Relational(Relational::Equality), 2)
-                        } else {
-                            // =
-                            (Assignment(Assingment::Simple), 1)
+                            self.temp_token_buf.push(second_token);
+                            self.temp_token_buf.push(token);
+                            return None;
                         }
-                    } else {
-                        // =
-                        (Assignment(Assingment::Simple), 1)
                     }
+                    self.temp_token_buf.push(second_token);
+                    // =
+                    return Some(Assignment(Assingment::Simple));
                 }
                 Plus => {
                     // +
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // +=
-                            (Assignment(Assingment::Addition), 2)
-                        } else {
-                            // +
-                            (Arithmetic(Arithmetic::Addition), 1)
+                            return Some(Assignment(Assingment::Addition));
                         }
-                    } else {
-                        // +
-                        (Arithmetic(Arithmetic::Addition), 1)
                     }
                 }
                 Minus => {
                     // -
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // -=
-                            (Assignment(Assingment::Subtraction), 2)
-                        } else {
-                            // -
-                            (Arithmetic(Arithmetic::Subtraction), 1)
+                            return Some(Assignment(Assingment::Subtraction));
                         }
-                    } else {
-                        // -
-                        (Arithmetic(Arithmetic::Subtraction), 1)
                     }
                 }
                 Asterisk => {
                     // *
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // *=
-                            (Assignment(Assingment::Multiplication), 2)
+                            return Some(Assignment(Assingment::Multiplication));
                         } else if second_symbol == Asterisk {
                             // **
-                            if let TokenKind::Symbol(third_token) = self.lexer.peek(offset + 2).kind
-                            {
+                            let current = self.get_current_token();
+                            if let TokenKind::Symbol(third_token) = current.kind {
                                 if third_token == Equals {
                                     // **=
-                                    (Assignment(Assingment::Exponentiation), 3)
-                                } else {
-                                    // **
-                                    (Arithmetic(Arithmetic::Exponentiation), 2)
+                                    return Some(Assignment(Assingment::Exponentiation));
                                 }
-                            } else {
-                                // **
-                                (Arithmetic(Arithmetic::Exponentiation), 2)
                             }
-                        } else {
-                            // *
-                            (Arithmetic(Arithmetic::Multiplication), 1)
+                            self.temp_token_buf.push(current);
                         }
-                    } else {
-                        // *
-                        (Arithmetic(Arithmetic::Multiplication), 1)
                     }
                 }
                 Slash => {
                     // /
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // /=
-                            (Assignment(Assingment::Division), 2)
-                        } else {
-                            // /
-                            (Arithmetic(Arithmetic::Division), 1)
+                            return Some(Assignment(Assingment::Division));
                         }
-                    } else {
-                        // /
-                        (Arithmetic(Arithmetic::Division), 1)
                     }
                 }
                 Percent => {
                     // %
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
+                    if let TokenKind::Symbol(second_symbol) = second_token.kind {
                         if second_symbol == Equals {
                             // %=
-                            (Assignment(Assingment::Modulo), 2)
-                        } else {
-                            // %
-                            (Arithmetic(Arithmetic::Modulo), 1)
+                            return Some(Assignment(Assingment::Modulo));
                         }
-                    } else {
+                    }
+                }
+                _ => {}
+            }
+            self.temp_token_buf.push(second_token);
+        }
+        self.temp_token_buf.push(token);
+        None
+    }
+
+    fn match_operator(&mut self) -> Option<Operator> {
+        let current = self.get_current_token();
+        let operator = match &current.kind {
+            TokenKind::Symbol(operator_symbol) => {
+                let second_token = self.get_current_token();
+                match operator_symbol {
+                    Equals => {
+                        // =
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // ==
+                                return Some(Relational(Relational::Equality));
+                            }
+                        }
+                        self.temp_token_buf.push(second_token);
+                        // =
+                        Assignment(Assingment::Simple)
+                    }
+                    Plus => {
+                        // +
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // +=
+                                return Some(Assignment(Assingment::Addition));
+                            }
+                        }
+                        self.temp_token_buf.push(second_token);
+                        // +
+                        Arithmetic(Arithmetic::Addition)
+                    }
+                    Minus => {
+                        // -
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // -=
+                                return Some(Assignment(Assingment::Subtraction));
+                            }
+                        }
+                        self.temp_token_buf.push(second_token);
+                        // -
+                        Arithmetic(Arithmetic::Subtraction)
+                    }
+                    Asterisk => {
+                        // *
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // *=
+                                return Some(Assignment(Assingment::Multiplication));
+                            } else if second_symbol == Asterisk {
+                                // **
+                                let current = self.get_current_token();
+                                if let TokenKind::Symbol(third_token) = current.kind {
+                                    if third_token == Equals {
+                                        // **=
+                                        return Some(Assignment(Assingment::Exponentiation));
+                                    }
+                                }
+                                self.temp_token_buf.push(current);
+                                // **
+                                return Some(Arithmetic(Arithmetic::Exponentiation));
+                            }
+                        }
+                        self.temp_token_buf.push(second_token);
+                        // *
+                        Arithmetic(Arithmetic::Multiplication)
+                    }
+                    Slash => {
+                        // /
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // /=
+                                return Some(Assignment(Assingment::Division));
+                            }
+                        }
+                        self.temp_token_buf.push(second_token);
+                        // /
+                        Arithmetic(Arithmetic::Division)
+                    }
+                    Percent => {
                         // %
-                        (Arithmetic(Arithmetic::Modulo), 1)
-                    }
-                }
-                Exclamation => {
-                    // !
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
-                        if second_symbol == Equals {
-                            // !=
-                            (Relational(Relational::InEquality), 2)
-                        } else {
-                            // !
-                            (Logical(Logical::Not), 1)
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // %=
+                                return Some(Assignment(Assingment::Modulo));
+                            }
                         }
-                    } else {
+                        self.temp_token_buf.push(second_token);
+                        // %
+                        Arithmetic(Arithmetic::Modulo)
+                    }
+                    Exclamation => {
                         // !
-                        (Logical(Logical::Not), 1)
-                    }
-                }
-                GreaterThan => {
-                    // >
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
-                        if second_symbol == Equals {
-                            // >=
-                            (Relational(Relational::GreaterThanOrEquals), 2)
-                        } else {
-                            // >
-                            (Relational(Relational::GreaterThan), 1)
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // !=
+                                return Some(Relational(Relational::InEquality));
+                            }
                         }
-                    } else {
+                        self.temp_token_buf.push(second_token);
+                        // !
+                        Logical(Logical::Not)
+                    }
+                    GreaterThan => {
                         // >
-                        (Relational(Relational::GreaterThan), 1)
-                    }
-                }
-                LessThan => {
-                    // <
-                    if let TokenKind::Symbol(second_symbol) = self.lexer.peek(offset + 1).kind {
-                        if second_symbol == Equals {
-                            // <=
-                            (Relational(Relational::LessThanOrEquals), 2)
-                        } else {
-                            // <
-                            (
-                                Relational(
-                                    crate::common::operators::relational::Relational::LessThan,
-                                ),
-                                1,
-                            )
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // >=
+                                return Some(Relational(Relational::GreaterThanOrEquals));
+                            }
                         }
-                    } else {
+                        self.temp_token_buf.push(second_token);
+                        // >
+                        Relational(Relational::GreaterThan)
+                    }
+                    LessThan => {
                         // <
-                        (
-                            Relational(crate::common::operators::relational::Relational::LessThan),
-                            1,
-                        )
-                    }
-                }
-                _ => {
-                    return None;
-                }
-            }
-        } else if let TokenKind::Keyword(keyword) = &self.lexer.peek(offset).kind {
-            match keyword {
-                Keyword::Is => {
-                    if let TokenKind::Keyword(keyword) = &self.lexer.peek(offset + 1).kind {
-                        if Keyword::Not == *keyword {
-                            (Relational(Relational::Equality), 2)
-                        } else {
-                            (Relational(Relational::Equality), 1)
+                        if let TokenKind::Symbol(second_symbol) = second_token.kind {
+                            if second_symbol == Equals {
+                                // <=
+                                return Some(Relational(Relational::LessThanOrEquals));
+                            }
                         }
-                    } else {
-                        (Relational(Relational::Equality), 1)
+                        self.temp_token_buf.push(second_token);
+                        // <
+                        Relational(Relational::LessThan)
+                    }
+                    _ => {
+                        self.temp_token_buf.push(second_token);
+                        self.temp_token_buf.push(current);
+                        return None;
                     }
                 }
-                Keyword::And => (Logical(Logical::And), 1),
-                Keyword::Or => (Logical(Logical::Or), 1),
-                Keyword::Not => (Logical(Logical::Not), 1),
-                Keyword::Xor => (Logical(Logical::Xor), 1),
+            }
+            TokenKind::Keyword(keyword) => match keyword {
+                Keyword::Is => {
+                    let current = self.get_current_token();
+                    if let TokenKind::Keyword(keyword) = &current.kind {
+                        if &Keyword::Not == keyword {
+                            return Some(Relational(Relational::Equality));
+                        }
+                    }
+                    self.temp_token_buf.push(current);
+                    Relational(Relational::Equality)
+                }
+                Keyword::And => Logical(Logical::And),
+                Keyword::Or => Logical(Logical::Or),
+                Keyword::Not => Logical(Logical::Not),
+                Keyword::Xor => Logical(Logical::Xor),
                 _ => {
+                    self.temp_token_buf.push(current);
                     return None;
                 }
+            },
+            _ => {
+                self.temp_token_buf.push(current);
+                return None;
             }
-        } else {
-            return None;
         };
-        Some((operator, offset + length))
+        Some(operator)
     }
 }
 

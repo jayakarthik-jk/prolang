@@ -1,69 +1,34 @@
-use prolang::common::diagnostics::Diagnostics;
-use prolang::interpretation::interpretate;
+pub(crate) mod common;
+pub(crate) mod evaluating;
+pub(crate) mod lexing;
+pub(crate) mod parsing;
 
-use std::io::stdin;
-use std::io::Write;
+use evaluating::{evaluator::Evaluator, global::Global};
+use lexing::{FileReader, Lexer};
+use parsing::Parser;
+use std::{sync::Arc, thread};
 
 fn main() {
-    let stdin = stdin();
-    print!("Enter the mode: ");
-    std::io::stdout().flush().unwrap();
+    // Global fields and functions
+    let global = Global::new();
+    // channels
+    let (file_chunk_transmitter, file_chunk_receiver) = std::sync::mpsc::channel();
+    let (token_transmitter, token_receiver) = std::sync::mpsc::channel();
+    let (statement_transmitter, statement_receiver) = std::sync::mpsc::channel();
 
-    let mut input = String::new();
-    stdin.read_line(&mut input).unwrap();
+    let file_reader = FileReader::new("app.prolang", file_chunk_transmitter);
+    let lexer = Lexer::new(file_chunk_receiver, token_transmitter);
+    let parser = Parser::new(
+        token_receiver,
+        statement_transmitter,
+        Arc::clone(&global.block),
+    );
+    let evaluator = Evaluator::new(statement_receiver, global);
 
-    if let std::cmp::Ordering::Equal = input.trim().cmp("file") {
-        file_mode();
-    } else if let std::cmp::Ordering::Equal = input.trim().cmp("") {
-        file_mode();
-    } else if let std::cmp::Ordering::Equal = input.trim().cmp("console") {
-        console_mode();
-    }
-}
-
-fn console_mode() {
-    let stdin = stdin();
-    let mut display_progress = true;
-    loop {
-        print!("$ ");
-        std::io::stdout().flush().unwrap();
-        let mut input = String::new();
-        stdin.read_line(&mut input).unwrap();
-
-        if let std::cmp::Ordering::Equal = input.trim().cmp("progress") {
-            display_progress = !display_progress;
-            continue;
-        }
-        if let std::cmp::Ordering::Equal = input.trim().cmp("exit") {
-            break;
-        }
-        if let std::cmp::Ordering::Equal = input.trim().cmp("clear") {
-            // clear the console
-            println!("{}[2J", 27 as char);
-            continue;
-        }
-
-        if let Err(error) = interpretate(input) {
-            println!("{}", error);
-        }
-        Diagnostics::print_errors();
-    }
-}
-
-fn file_mode() {
-    use std::fs::read_to_string;
-
-    let file_name = "app.prolang";
-    let input = match read_to_string(file_name) {
-        Ok(input) => input,
-        Err(error) => {
-            eprintln!("error reading file: {}", error);
-            return;
-        }
-    };
-
-    if let Err(error) = interpretate(input) {
-        println!("{}", error);
-    }
-    Diagnostics::print_errors();
+    thread::scope(move |scope| {
+        scope.spawn(move || evaluator.evaluate());
+        scope.spawn(move || parser.parse());
+        scope.spawn(move || lexer.lex());
+        file_reader.read();
+    });
 }

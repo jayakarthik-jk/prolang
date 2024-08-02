@@ -6,10 +6,8 @@ use crate::lexing::token::TokenKind::*;
 
 use super::token::TokenKind;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq)]
 pub enum Keyword {
-    True,
-    False,
     And,
     Or,
     Not,
@@ -54,8 +52,6 @@ impl Keyword {
 impl Display for Keyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            True => "true",
-            False => "false",
             And => "and",
             Or => "or",
             Not => "not",

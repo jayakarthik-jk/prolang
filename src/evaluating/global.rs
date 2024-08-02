@@ -1,18 +1,10 @@
-use std::{io::Write, sync::Arc};
+use std::io::Write;
+use std::sync::{Arc, RwLock};
 
 use crate::common::literal::Literal;
 use crate::common::{datatypes::DataType, errors::CompilerError};
+use crate::parsing::block::Block;
 use std::io::{stdin, stdout};
-
-type BuiltInFunction = fn(Vec<Literal>) -> Result<Literal, CompilerError>;
-lazy_static::lazy_static! {
-    static ref GLOBAL_PROPERTIES: Arc<Vec<BuiltInAttributes>> = Arc::new(vec![
-        BuiltInAttributes::BuiltInFunctions("print".to_string(), print),
-        BuiltInAttributes::BuiltInFunctions("input".to_string(), input),
-        BuiltInAttributes::BuiltInFunctions("number".to_string(), to_number),
-        BuiltInAttributes::BuiltInProperties("lucky".to_string(), Literal::from(7))
-    ]);
-}
 
 fn to_number(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
     if variables.len() != 1 {
@@ -22,7 +14,7 @@ fn to_number(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
             variables.len(),
         ));
     }
-    let variable = variables.get(0).unwrap();
+    let variable = variables.first().unwrap();
     match &variable.value {
         DataType::String(string) => {
             let int = string.parse::<i128>();
@@ -59,16 +51,31 @@ fn input(variables: Vec<Literal>) -> Result<Literal, CompilerError> {
     Ok(Literal::from(buffer))
 }
 
+type BuiltInFunction = fn(Vec<Literal>) -> Result<Literal, CompilerError>;
 enum BuiltInAttributes {
     BuiltInFunctions(String, BuiltInFunction),
     BuiltInProperties(String, Literal),
 }
 
-pub(crate) struct GlobalProperties;
+pub(crate) struct Global {
+    properties: Vec<BuiltInAttributes>,
+    pub(crate) block: Arc<RwLock<Block>>,
+}
 
-impl GlobalProperties {
-    pub(crate) fn get_built_in_function(name: &str) -> Option<&'static BuiltInFunction> {
-        for property in GLOBAL_PROPERTIES.iter() {
+impl Global {
+    pub(crate) fn new() -> Self {
+        Self {
+            block: Arc::new(RwLock::new(Block::new())),
+            properties: vec![
+                BuiltInAttributes::BuiltInFunctions("print".to_string(), print),
+                BuiltInAttributes::BuiltInFunctions("input".to_string(), input),
+                BuiltInAttributes::BuiltInFunctions("number".to_string(), to_number),
+                BuiltInAttributes::BuiltInProperties("lucky".to_string(), Literal::from(7)),
+            ],
+        }
+    }
+    pub(crate) fn get_built_in_function(&self, name: &str) -> Option<&BuiltInFunction> {
+        for property in self.properties.iter() {
             if let BuiltInAttributes::BuiltInFunctions(function_name, function) = property {
                 if name == function_name {
                     return Some(function);
@@ -77,8 +84,8 @@ impl GlobalProperties {
         }
         None
     }
-    pub(crate) fn get_built_in_properties(name: &str) -> Option<Literal> {
-        for property in GLOBAL_PROPERTIES.iter() {
+    pub(crate) fn get_built_in_properties(&self, name: &str) -> Option<Literal> {
+        for property in self.properties.iter() {
             if let BuiltInAttributes::BuiltInProperties(property_name, property_value) = property {
                 if name == property_name {
                     return Some(property_value.clone());

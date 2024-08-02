@@ -4,7 +4,6 @@ use crate::common::literal::Literal;
 
 use super::{keywords::Keyword, symbols::Symbol};
 
-#[derive(Debug, Clone)]
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) line: usize,
@@ -23,12 +22,9 @@ impl Display for Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(PartialEq)]
 pub enum TokenKind {
     Literal(Literal),
-    /// number of whitespace
-    Whitespace(usize),
-    NewLine,
     Keyword(Keyword),
     Symbol(Symbol),
     Identifier(String),
@@ -37,14 +33,13 @@ pub enum TokenKind {
 
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use TokenKind::*;
         match self {
-            TokenKind::Literal(a) => write!(f, "{}", a),
-            TokenKind::Whitespace(a) => write!(f, "{}", a),
-            TokenKind::NewLine => write!(f, "NewLineToken"),
-            TokenKind::Keyword(a) => write!(f, "{}", a),
-            TokenKind::Symbol(a) => write!(f, "{}", a),
-            TokenKind::Identifier(a) => write!(f, "{}", a),
-            TokenKind::EndOfFile => write!(f, "end of the file"),
+            Literal(a) => write!(f, "{}", a),
+            Keyword(a) => write!(f, "{}", a),
+            Symbol(a) => write!(f, "{}", a),
+            Identifier(a) => write!(f, "{}", a),
+            EndOfFile => write!(f, "end of the file"),
         }
     }
 }

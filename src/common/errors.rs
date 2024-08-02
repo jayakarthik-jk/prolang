@@ -7,24 +7,23 @@ use crate::common::operators::Operator;
 use crate::lexing::symbols::Symbol;
 use crate::lexing::token::TokenKind;
 
-#[derive(Debug)]
 pub enum CompilerError {
-    NoTokensAvailable,
+    // NoTokensAvailable,
 
-    // Lexical Errors
-    InvalidCharacter(
-        char,  // character
-        usize, // line
-        usize, // column
-    ),
-    InvalidNumber(
-        String, // number
-        usize,  // line
-        usize,  // column
-    ),
-    UnterminatedString(usize, usize),
-    InvalidKeyword,
-    InvalidUtf8Character,
+    // // Lexical Errors
+    // InvalidCharacter(
+    //     char,  // character
+    //     usize, // line
+    //     usize, // column
+    // ),
+    // InvalidNumber(
+    //     String, // number
+    //     usize,  // line
+    //     usize,  // column
+    // ),
+    // UnterminatedString(usize, usize),
+    // InvalidKeyword,
+    // InvalidUtf8Character,
 
     // Syntax Errors
     UnexpectedToken(
@@ -56,7 +55,7 @@ pub enum CompilerError {
     InvalidSeperator(Symbol),
     InvalidEncloser(Symbol),
     UndefinedFunction(String),
-    InvalidExpressionAssignment,
+    // InvalidExpressionAssignment,
     InvalidAssignment,
     InvalidStringParsing(Literal),
     InvalidUneryOperation,
@@ -88,25 +87,24 @@ pub enum CompilerError {
     Warnings(&'static str),
 
     // Internal Errors
-    InternalNotAFunction,
     OperationOnUndefined,
 }
 
 impl Display for CompilerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            CompilerError::NoTokensAvailable => "No tokens available".to_string(),
-            CompilerError::InvalidCharacter(character, line, column) => format!(
-                "Invalid character '{}' at line {}, column {}",
-                character, line, column
-            ),
-            CompilerError::InvalidNumber(number, line, column) => format!(
-                "Invalid number '{}' at line {}, column {}",
-                number, line, column
-            ),
-            CompilerError::UnterminatedString(line, column) => {
-                format!("Unterminated string at line {}, column {}", line, column)
-            }
+            // CompilerError::NoTokensAvailable => "No tokens available".to_string(),
+            // CompilerError::InvalidCharacter(character, line, column) => format!(
+            //     "Invalid character '{}' at line {}, column {}",
+            //     character, line, column
+            // ),
+            // CompilerError::InvalidNumber(number, line, column) => format!(
+            //     "Invalid number '{}' at line {}, column {}",
+            //     number, line, column
+            // ),
+            // CompilerError::UnterminatedString(line, column) => {
+            //     format!("Unterminated string at line {}, column {}", line, column)
+            // }
             CompilerError::UnexpectedToken(token, line, column) => format!(
                 "Unexpected token '{}' at line {}, column {}",
                 token, line, column
@@ -118,11 +116,11 @@ impl Display for CompilerError {
                 format!("Invalid operator '{}' for unary operation", operator)
             }
             CompilerError::UndefinedVariable(name) => format!("Undefined variable '{}'", name),
-            CompilerError::InvalidExpressionAssignment => {
-                "Invalid expression assignment".to_string()
-            }
+            // CompilerError::InvalidExpressionAssignment => {
+            //     "Invalid expression assignment".to_string()
+            // }
             CompilerError::InvalidAssignment => "Invalid assignment".to_string(),
-            CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
+            // CompilerError::InvalidKeyword => "Invalid keyword".to_string(),
             CompilerError::InvalidStringParsing(a) => {
                 format!("Invalid string parsing: '{}' is not a valid Number", a)
             }
@@ -137,7 +135,7 @@ impl Display for CompilerError {
             CompilerError::OperationOnUndefined => {
                 panic!("operation on undefined. this should not be happening, place an issue")
             }
-            CompilerError::InvalidUtf8Character => "Invalid UTF-8 character".to_string(),
+            // CompilerError::InvalidUtf8Character => "Invalid UTF-8 character".to_string(),
             CompilerError::InvalidUseOfMutableKeyword => {
                 "Invalid use of `mutable` keyword".to_string()
             }
@@ -161,7 +159,6 @@ impl Display for CompilerError {
             CompilerError::InvalidSeperator(seperator) => format!("invalid seperator {seperator}"),
             CompilerError::InvalidEncloser(encloser) => format!("invalid encloser {encloser}"),
             CompilerError::UndefinedFunction(name) => format!("Undefined function {name}"),
-            CompilerError::InternalNotAFunction => "Not a function".to_string(),
             CompilerError::MissingArrow(token, line, column) => format!(
                 "Expected arrow `=>` but got '{}' at line {}, column {}",
                 token, line, column
