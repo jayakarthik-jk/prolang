@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use colored::Colorize;
-
 use crate::common::literal::Literal;
 use crate::common::operators::Operator;
 use crate::lexing::symbols::Symbol;
@@ -83,9 +81,6 @@ pub enum CompilerError {
     SkipCountTypeMisMatch(String),
     InvalidType(String),
 
-    // warnings
-    Warnings(&'static str),
-
     // Internal Errors
     OperationOnUndefined,
 }
@@ -148,7 +143,6 @@ impl Display for CompilerError {
             CompilerError::CannotConvertFromImmutableToMutable => {
                 "Cannot convert from Immutable to Mutable".to_string()
             }
-            CompilerError::Warnings(warning) => warning.to_string(),
             CompilerError::UnInitializedVariable(name) => format!("Uninitialized variable {name}"),
             CompilerError::UnexpectedTokenWithExpected(unexpected, expected, line, column) => {
                 format!(
@@ -197,6 +191,6 @@ impl Display for CompilerError {
                 format!("Invalid type {received_type}")
             }
         };
-        write!(f, "{}", text.red())
+        write!(f, "{}", text)
     }
 }

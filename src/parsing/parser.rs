@@ -4,7 +4,6 @@ use std::sync::{Arc, RwLock};
 use super::block::Block;
 use super::seperated_statements::SeperatedStatements;
 use crate::common::datatypes::DataType;
-use crate::common::diagnostics::Diagnostics;
 use crate::common::errors::CompilerError;
 use crate::common::functions::Function;
 use crate::common::literal::Literal;
@@ -716,7 +715,6 @@ fn handle_mutable_assignment(
                 if old_variable.is_mutable() {
                     // `mutable` variable_name = old_expression
                     // `mutable` variable_name = new_expression
-                    Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
                     block.add_symbol(
                         variable_name.to_string(),
                         Literal::new_mutable(DataType::InternalUndefined),
@@ -747,7 +745,6 @@ fn handle_mutable_assignment(
                 if old_variable.is_mutable() {
                     // `mutable` variable_name operator old_expression
                     // `mutable` variable_name assignment_operator new expression
-                    Diagnostics::add_error(CompilerError::Warnings("You don't need to use mutable keyword twice, once it is declared as mutable it will be mutable forever"));
                     block.add_symbol(
                         variable_name.to_string(),
                         Literal::new_mutable(DataType::InternalUndefined),
